@@ -28,11 +28,16 @@ class PluginAgilizepulsarView extends CommonDBTM {
         }
 
         $view = new self();
-        return $view->add([
+        $data = [
             'tickets_id' => $tickets_id,
-            'users_id'   => $users_id,
-            'viewed_at'  => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s')
-        ]);
+            'users_id'   => $users_id
+        ];
+
+        if (isset($_SESSION['glpi_currenttime'])) {
+            $data['viewed_at'] = $_SESSION['glpi_currenttime'];
+        }
+
+        return $view->add($data);
     }
 
     public static function countByTicket($tickets_id) {

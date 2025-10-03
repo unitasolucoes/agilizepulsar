@@ -19,7 +19,7 @@ class PluginAgilizepulsarMenu extends CommonGLPI {
         $menu = [];
         $menu['title'] = self::getMenuName();
         $menu['page'] = Plugin::getWebDir('agilizepulsar') . '/front/feed.php';
-        $menu['icon'] = 'ti ti-bulb';
+        $menu['icon'] = 'fa-solid fa-lightbulb';
         
         $menu['options']['feed'] = [
             'title' => __('Feed', 'agilizepulsar'),

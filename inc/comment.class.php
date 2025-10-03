@@ -14,20 +14,21 @@ class PluginAgilizepulsarComment extends CommonDBTM {
     
     public static function addComment($tickets_id, $users_id, $content) {
         global $DB;
-        
-        if (!PluginAgilizepulsarTicket::isIdea($tickets_id)) {
+
+        if (!PluginAgilizepulsarTicket::isIdea($tickets_id)
+            && !PluginAgilizepulsarTicket::isCampaign($tickets_id)) {
             return false;
         }
-        
+
         if (empty(trim($content))) {
             return false;
         }
-        
+
         $comment = new self();
-        $result = $comment->add([
-            'tickets_id' => $tickets_id,
-            'users_id' => $users_id,
-            'content' => $content,
+        $result  = $comment->add([
+            'tickets_id'    => $tickets_id,
+            'users_id'      => $users_id,
+            'content'       => $content,
             'date_creation' => $_SESSION['glpi_currenttime']
         ]);
         

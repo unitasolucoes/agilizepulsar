@@ -176,6 +176,7 @@
     color: #1e40af;
 }
 
+.badge.warn,
 .badge.warning {
     background: #fff4e5;
     color: #b45309;

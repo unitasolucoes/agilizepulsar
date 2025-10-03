@@ -23,6 +23,7 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
             'menu_name'            => 'Pulsar',
             'campaign_category_id' => 152,
             'idea_category_id'     => 153,
+            'idea_form_url'        => '/marketplace/formcreator/front/formdisplay.php?id=121',
             'view_profile_ids'     => json_encode([]),
             'like_profile_ids'     => json_encode([]),
             'admin_profile_ids'    => json_encode([])
