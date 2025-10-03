@@ -173,17 +173,7 @@ $ideas_implemented = $countTickets([$idea_category_id], [Ticket::CLOSED]);
 
 $top_likes = [];
 if (!empty($active_categories)) {
-    $likes_where = [
-        't.itilcategories_id' => array_map('intval', $active_categories)
-    ];
-
-    if ($startDateStr) {
-        $likes_where[] = ['>=', 't.date', $startDateStr];
-    }
-
-    if ($endDateStr) {
-        $likes_where[] = ['<=', 't.date', $endDateStr];
-    }
+    $likes_where_sql = $buildWhere($active_categories, 't');
 
     $iterator = $DB->request([
         'SELECT' => [
@@ -205,7 +195,7 @@ if (!empty($active_categories)) {
                 'ON' => ['u' => 'id', 't' => 'users_id_recipient']
             ]
         ],
-        'WHERE' => $likes_where,
+        'WHERE' => new QueryExpression($likes_where_sql),
         'GROUPBY' => ['t.id', 't.name', 't.users_id_recipient', 't.itilcategories_id', 'u.realname', 'u.firstname', 'u.name'],
         'ORDER' => ['likes_count DESC', 't.name ASC'],
         'LIMIT' => 10
@@ -241,17 +231,7 @@ if (!empty($active_categories)) {
 
 $top_views = [];
 if (!empty($active_categories)) {
-    $views_where = [
-        't.itilcategories_id' => array_map('intval', $active_categories)
-    ];
-
-    if ($startDateStr) {
-        $views_where[] = ['>=', 't.date', $startDateStr];
-    }
-
-    if ($endDateStr) {
-        $views_where[] = ['<=', 't.date', $endDateStr];
-    }
+    $views_where_sql = $buildWhere($active_categories, 't');
 
     $iterator = $DB->request([
         'SELECT' => [
@@ -273,7 +253,7 @@ if (!empty($active_categories)) {
                 'ON' => ['u' => 'id', 't' => 'users_id_recipient']
             ]
         ],
-        'WHERE' => $views_where,
+        'WHERE' => new QueryExpression($views_where_sql),
         'GROUPBY' => ['t.id', 't.name', 't.users_id_recipient', 't.itilcategories_id', 'u.realname', 'u.firstname', 'u.name'],
         'ORDER' => ['views_count DESC', 't.name ASC'],
         'LIMIT' => 10
