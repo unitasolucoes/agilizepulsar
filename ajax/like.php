@@ -21,7 +21,8 @@ $action = $_POST['action'];
 $ticket_id = (int)$_POST['ticket_id'];
 $user_id = Session::getLoginUserID();
 
-if (!PluginAgilizepulsarTicket::isIdea($ticket_id)) {
+if (!PluginAgilizepulsarTicket::isIdea($ticket_id)
+    && !PluginAgilizepulsarTicket::isCampaign($ticket_id)) {
     echo json_encode(['success' => false, 'message' => 'Ticket inválido']);
     exit;
 }
