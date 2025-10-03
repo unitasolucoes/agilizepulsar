@@ -28,7 +28,7 @@ class PluginAgilizepulsarUserPoints extends CommonDBTM {
         
         $userPoints->update($userPoints->fields);
         
-        PluginAgilizepulsarPointsHistory::add([
+        PluginAgilizepulsarPointsHistory::record([
             'users_id' => $users_id,
             'action_type' => $action_type,
             'points_earned' => $config,
@@ -55,7 +55,7 @@ class PluginAgilizepulsarUserPoints extends CommonDBTM {
         
         $userPoints->update($userPoints->fields);
         
-        PluginAgilizepulsarPointsHistory::add([
+        PluginAgilizepulsarPointsHistory::record([
             'users_id' => $users_id,
             'action_type' => 'removed_' . $action_type,
             'points_earned' => -$config,
