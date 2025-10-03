@@ -12,11 +12,13 @@ class PluginAgilizepulsarPointsHistory extends CommonDBTM {
         return __('Points History', 'agilizepulsar');
     }
     
-    public static function add($data) {
+    public static function record(array $data) {
         $history = new self();
-        
-        $data['date_creation'] = $_SESSION['glpi_currenttime'];
-        
+
+        if (!isset($data['date_creation'])) {
+            $data['date_creation'] = $_SESSION['glpi_currenttime'];
+        }
+
         return $history->add($data);
     }
     
