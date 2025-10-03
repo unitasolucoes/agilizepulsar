@@ -6,6 +6,12 @@ header('Content-Type: application/json');
 
 Session::checkLoginUser();
 
+$user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+if (!PluginAgilizepulsarConfig::canLike($user_profile)) {
+    echo json_encode(['success' => false, 'message' => 'Sem permissão']);
+    exit;
+}
+
 if (!isset($_POST['action']) || !isset($_POST['ticket_id'])) {
     echo json_encode(['success' => false, 'message' => 'Parâmetros inválidos']);
     exit;

@@ -3,7 +3,17 @@
 include('../../../inc/includes.php');
 Session::checkLoginUser();
 
-$title = __('Pulsar – Todas as Ideias');
+$user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+
+if (!PluginAgilizepulsarConfig::canView($user_profile)) {
+    Html::displayRightError();
+    exit;
+}
+
+$config = PluginAgilizepulsarConfig::getConfig();
+$menu_name = $config['menu_name'];
+
+$title = sprintf(__('%s – Todas as Ideias', 'agilizepulsar'), $menu_name);
 if (Session::getCurrentInterface() == "helpdesk") {
    Html::helpHeader($title, '', 'helpdesk', 'management');
 } else {
@@ -15,6 +25,7 @@ $ideas = PluginAgilizepulsarTicket::getIdeas();
 
 // Buscar campanhas para o filtro
 $campaigns = PluginAgilizepulsarTicket::getCampaigns();
+$can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -23,7 +34,7 @@ $campaigns = PluginAgilizepulsarTicket::getCampaigns();
 
   <section class="pulsar-hero card-u">
     <div class="hero-left">
-      <h1>Pulsar</h1>
+      <h1><?php echo htmlspecialchars($menu_name); ?></h1>
       <p class="pulsar-muted">Explore todas as ideias enviadas pela comunidade.</p>
     </div>
     <div class="pulsar-actions">
@@ -45,10 +56,12 @@ $campaigns = PluginAgilizepulsarTicket::getCampaigns();
       <i class="fa-solid fa-chart-bar"></i>
       <span>Dashboard</span>
     </a>    
+    <?php if ($can_admin): ?>
     <a class="topnav-item" href="settings.php">
       <i class="fa-solid fa-gear"></i>
       <span>Configurações</span>
     </a>
+    <?php endif; ?>
   </nav>
 
   <div class="pulsar-filters-container card-u">
