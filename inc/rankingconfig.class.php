@@ -4,62 +4,75 @@ if (!defined('GLPI_ROOT')) {
     die("Sorry. You can't access this file directly");
 }
 
-class PluginAgilizepulsarPointsHistory extends CommonDBTM {
-    
-    static $rightname = 'ticket';
-    
+class PluginAgilizepulsarRankingConfig extends CommonDBTM {
+
+    static $rightname = 'config';
+
     public static function getTypeName($nb = 0) {
-        return __('Points History', 'agilizepulsar');
+        return __('Ranking Configuration', 'agilizepulsar');
     }
-    
-    public static function add($data) {
-        $history = new self();
-        
-        $data['date_creation'] = $_SESSION['glpi_currenttime'];
-        
-        return $history->add($data);
-    }
-    
-    public static function getByUser($users_id, $limit = 50) {
+
+    public static function getPointsValue($action_type) {
         global $DB;
-        
-        $iterator = $DB->request([
-            'FROM' => self::getTable(),
-            'WHERE' => ['users_id' => $users_id],
-            'ORDER' => 'date_creation DESC',
-            'LIMIT' => $limit
-        ]);
-        
-        $history = [];
-        foreach ($iterator as $data) {
-            $history[] = $data;
-        }
-        
-        return $history;
-    }
-    
-    public static function getByTicket($tickets_id, $limit = 50) {
-        global $DB;
-        
+
         $iterator = $DB->request([
             'FROM' => self::getTable(),
             'WHERE' => [
-                'reference_id' => $tickets_id,
-                'reference_type' => 'Ticket'
+                'action_type' => $action_type,
+                'is_active'   => 1
             ],
-            'ORDER' => 'date_creation DESC',
-            'LIMIT' => $limit
+            'LIMIT' => 1
         ]);
-        
-        $history = [];
-        foreach ($iterator as $data) {
-            $user = new User();
-            if ($user->getFromDB($data['users_id'])) {
-                $data['user_name'] = $user->getFriendlyName();
-                $history[] = $data;
-            }
+
+        if (count($iterator) > 0) {
+            $data = $iterator->current();
+            return (int) $data['points_value'];
         }
-        
-        return $history;
+
+        return 0;
+    }
+
+    public static function getAllConfig() {
+        global $DB;
+
+        $iterator = $DB->request([
+            'FROM'  => self::getTable(),
+            'ORDER' => 'action_type ASC'
+        ]);
+
+        $configs = [];
+        foreach ($iterator as $data) {
+            $configs[$data['action_type']] = $data;
+        }
+
+        return $configs;
+    }
+
+    public static function updatePointsValue($action_type, $points_value, $is_active = 1) {
+        global $DB;
+
+        $iterator = $DB->request([
+            'FROM' => self::getTable(),
+            'WHERE' => ['action_type' => $action_type],
+            'LIMIT' => 1
+        ]);
+
+        if (count($iterator) > 0) {
+            $data   = $iterator->current();
+            $config = new self();
+
+            return $config->update([
+                'id'           => $data['id'],
+                'points_value' => $points_value,
+                'is_active'    => $is_active
+            ]);
+        }
+
+        $config = new self();
+        return $config->add([
+            'action_type'  => $action_type,
+            'points_value' => $points_value,
+            'is_active'    => $is_active
+        ]);
     }
 }

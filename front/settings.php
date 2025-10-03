@@ -17,6 +17,15 @@ if (!PluginAgilizepulsarConfig::canAdmin($user_profile)) {
 
 $config = PluginAgilizepulsarConfig::getConfig();
 $menu_name = $config['menu_name'];
+$ranking_configs = PluginAgilizepulsarRankingConfig::getAllConfig();
+
+$ranking_actions = [
+    'submitted_idea'   => __('Ideia enviada', 'agilizepulsar'),
+    'approved_idea'    => __('Ideia aprovada', 'agilizepulsar'),
+    'implemented_idea' => __('Ideia implementada', 'agilizepulsar'),
+    'like'             => __('Curtida registrada', 'agilizepulsar'),
+    'comment'          => __('Comentário publicado', 'agilizepulsar')
+];
 
 $view_profiles  = json_decode($config['view_profile_ids'] ?? '[]', true) ?: [];
 $like_profiles  = json_decode($config['like_profile_ids'] ?? '[]', true) ?: [];
@@ -33,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $menu_name_post = trim($_POST['menu_name'] ?? '');
     $campaign_post  = (int)($_POST['campaign_category_id'] ?? 0);
     $idea_post      = (int)($_POST['idea_category_id'] ?? 0);
+    $idea_form_post = trim($_POST['idea_form_url'] ?? '');
     $view_post      = isset($_POST['view_profile_ids']) ? array_map('intval', (array)$_POST['view_profile_ids']) : [];
     $like_post      = isset($_POST['like_profile_ids']) ? array_map('intval', (array)$_POST['like_profile_ids']) : [];
     $admin_post     = isset($_POST['admin_profile_ids']) ? array_map('intval', (array)$_POST['admin_profile_ids']) : [];
@@ -41,12 +51,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'menu_name'            => $menu_name_post !== '' ? $menu_name_post : 'Pulsar',
         'campaign_category_id' => $campaign_post ?: $campaign_category_id,
         'idea_category_id'     => $idea_post ?: $idea_category_id,
+        'idea_form_url'        => $idea_form_post !== '' ? $idea_form_post : ($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'),
         'view_profile_ids'     => json_encode(array_values(array_unique($view_post))),
         'like_profile_ids'     => json_encode(array_values(array_unique($like_post))),
         'admin_profile_ids'    => json_encode(array_values(array_unique($admin_post)))
     ];
 
-    if (PluginAgilizepulsarConfig::updateConfig($data)) {
+    $update_success = PluginAgilizepulsarConfig::updateConfig($data);
+
+    $ranking_post = $_POST['ranking'] ?? [];
+    foreach ($ranking_actions as $action_key => $action_label) {
+        $points_value = 0;
+        $is_active    = 0;
+
+        if (isset($ranking_post[$action_key])) {
+            $raw_points = $ranking_post[$action_key]['points_value'] ?? '0';
+            if (is_array($raw_points)) {
+                $raw_points = reset($raw_points);
+            }
+            $points_value = max(0, (int)$raw_points);
+            $is_active    = isset($ranking_post[$action_key]['is_active']) ? 1 : 0;
+        } else {
+            $points_value = isset($ranking_configs[$action_key]['points_value']) ? (int)$ranking_configs[$action_key]['points_value'] : 0;
+            $is_active    = isset($ranking_configs[$action_key]['is_active']) ? (int)$ranking_configs[$action_key]['is_active'] : 0;
+        }
+
+        $update_success = PluginAgilizepulsarRankingConfig::updatePointsValue($action_key, $points_value, $is_active) && $update_success;
+    }
+
+    if ($update_success) {
         Session::addMessageAfterRedirect(__('Configurações atualizadas com sucesso.', 'agilizepulsar'), true, INFO);
     } else {
         Session::addMessageAfterRedirect(__('Não foi possível atualizar as configurações.', 'agilizepulsar'), true, ERROR);
@@ -93,7 +126,7 @@ $csrf_token = Session::getNewCSRFToken();
   <section class="pulsar-hero card-u">
     <div class="hero-left">
       <h1><?php echo htmlspecialchars($menu_name); ?></h1>
-      <p class="pulsar-muted">Configure as categorias e permissões do Pulsar.</p>
+      <p class="pulsar-muted"><?php echo __('Configure as categorias, permissões e pontuações do Pulsar.', 'agilizepulsar'); ?></p>
     </div>
     <div class="pulsar-actions">
       <a href="feed.php" class="btn-u ghost"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
@@ -149,6 +182,11 @@ $csrf_token = Session::getNewCSRFToken();
             <?php endforeach; ?>
           </select>
         </div>
+        <div class="form-group">
+          <label for="idea_form_url">URL do formulário de ideias</label>
+          <input type="url" id="idea_form_url" name="idea_form_url" value="<?php echo htmlspecialchars($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'); ?>" required>
+          <small class="pulsar-muted">Defina o endereço do formulário FormCreator utilizado para registrar novas ideias.</small>
+        </div>
       </div>
     </section>
 
@@ -191,9 +229,51 @@ $csrf_token = Session::getNewCSRFToken();
       </div>
     </section>
 
+    <section class="card-u">
+      <h2><i class="fa-solid fa-trophy"></i> <?php echo __('Pontuação', 'agilizepulsar'); ?></h2>
+      <p class="pulsar-muted"><?php echo __('Configure a pontuação atribuída para cada ação do Pulsar.', 'agilizepulsar'); ?></p>
+      <div class="table-responsive">
+        <table class="table-u">
+          <thead>
+            <tr>
+              <th><?php echo __('Ação', 'agilizepulsar'); ?></th>
+              <th><?php echo __('Pontuação', 'agilizepulsar'); ?></th>
+              <th class="text-center"><?php echo __('Ativo', 'agilizepulsar'); ?></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($ranking_actions as $action_key => $action_label):
+                $current_points = $ranking_configs[$action_key]['points_value'] ?? 0;
+                $current_active = (int)($ranking_configs[$action_key]['is_active'] ?? 0);
+            ?>
+              <tr>
+                <td><?php echo htmlspecialchars($action_label); ?></td>
+                <td>
+                  <input type="number"
+                         id="ranking_<?php echo htmlspecialchars($action_key); ?>_points"
+                         name="ranking[<?php echo htmlspecialchars($action_key); ?>][points_value]"
+                         min="0"
+                         step="1"
+                         value="<?php echo (int)$current_points; ?>"
+                         class="input-small">
+                </td>
+                <td class="text-center">
+                  <input type="checkbox"
+                         id="ranking_<?php echo htmlspecialchars($action_key); ?>_active"
+                         name="ranking[<?php echo htmlspecialchars($action_key); ?>][is_active]"
+                         value="1" <?php echo $current_active ? 'checked' : ''; ?>>
+                  <label class="sr-only" for="ranking_<?php echo htmlspecialchars($action_key); ?>_active"><?php echo __('Ativar ação', 'agilizepulsar'); ?></label>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="form-actions">
-      <button type="submit" class="btn-u primary"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
-      <a href="feed.php" class="btn-u ghost"><i class="fa-solid fa-xmark"></i> Cancelar</a>
+      <button type="submit" class="btn-u primary"><i class="fa-solid fa-floppy-disk"></i> <?php echo __('Salvar configurações', 'agilizepulsar'); ?></button>
+      <a href="feed.php" class="btn-u ghost"><i class="fa-solid fa-xmark"></i> <?php echo __('Cancelar', 'agilizepulsar'); ?></a>
     </div>
   </form>
 </div>
@@ -226,6 +306,14 @@ $csrf_token = Session::getNewCSRFToken();
   .form-group input{border:1px solid var(--u-border);border-radius:8px;padding:10px;font-size:1rem}
   .form-group select[multiple]{min-height:160px}
   .form-actions{display:flex;gap:12px;justify-content:flex-end;padding:8px 0}
+  .table-responsive{overflow:auto}
+  .table-u{width:100%;border-collapse:collapse;margin-top:12px}
+  .table-u th,.table-u td{padding:10px;border-bottom:1px solid var(--u-border);text-align:left}
+  .table-u th{background:#f8fafc;font-size:.95rem;color:#1f2933}
+  .table-u tr:last-child td{border-bottom:none}
+  .input-small{max-width:120px;width:100%}
+  .text-center{text-align:center}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 <?php
 Html::footer();
