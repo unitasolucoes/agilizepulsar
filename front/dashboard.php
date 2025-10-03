@@ -15,6 +15,23 @@ $menu_name = $config['menu_name'];
 $idea_category_id = (int)$config['idea_category_id'];
 $campaign_category_id = (int)$config['campaign_category_id'];
 
+$all_campaigns = PluginAgilizepulsarTicket::getCampaigns();
+$active_statuses = [Ticket::INCOMING, Ticket::ASSIGNED, Ticket::PLANNED, Ticket::WAITING];
+$total_campaigns_active = 0;
+$total_campaigns_closed = 0;
+foreach ($all_campaigns as $campaign_item) {
+    if (in_array($campaign_item['status'], $active_statuses, true)) {
+        $total_campaigns_active++;
+    } else {
+        $total_campaigns_closed++;
+    }
+}
+$total_campaigns_all = count($all_campaigns);
+$overall_ideas_count = count(PluginAgilizepulsarTicket::getIdeas());
+$conversion_rate = $total_campaigns_all > 0 ? round($overall_ideas_count / $total_campaigns_all, 1) : 0;
+$campaign_status_labels = [__('Ativas', 'agilizepulsar'), __('Encerradas', 'agilizepulsar')];
+$campaign_status_dataset_label = __('Quantidade', 'agilizepulsar');
+
 $period = $_GET['period'] ?? 'year';
 $category_filter = $_GET['category'] ?? 'ideas';
 $start_date_param = $_GET['start_date'] ?? '';
@@ -222,6 +239,29 @@ if (!empty($active_categories)) {
     }
 }
 
+$top_campaigns = [];
+if ($campaign_category_id > 0 && $idea_category_id > 0) {
+    $query = sprintf(
+        "SELECT t.id, t.name, t.date, COUNT(it.tickets_id) AS ideas_count, "
+        . "(SELECT COUNT(*) FROM glpi_plugin_agilizepulsar_likes WHERE tickets_id = t.id) AS likes_count "
+        . "FROM glpi_tickets t "
+        . "LEFT JOIN glpi_items_tickets it ON (it.items_id = t.id AND it.itemtype = 'Ticket') "
+        . "LEFT JOIN glpi_tickets ideas ON (ideas.id = it.tickets_id AND ideas.itilcategories_id = %d) "
+        . "WHERE t.itilcategories_id = %d "
+        . "GROUP BY t.id, t.name, t.date "
+        . "ORDER BY ideas_count DESC "
+        . "LIMIT 10",
+        $idea_category_id,
+        $campaign_category_id
+    );
+
+    if ($result = $DB->query($query)) {
+        while ($row = $DB->fetchAssoc($result)) {
+            $top_campaigns[] = $row;
+        }
+    }
+}
+
 $status_counts = [];
 if (!empty($active_categories)) {
     $whereSql = $buildWhere($active_categories, 't');
@@ -291,6 +331,8 @@ foreach (Ticket::getAllStatusArray() as $status => $label) {
 $card_data = [
     ['label' => __('Total Ideias', 'agilizepulsar'), 'value' => $total_ideas, 'icon' => 'fa-lightbulb'],
     ['label' => __('Total Campanhas', 'agilizepulsar'), 'value' => $total_campaigns, 'icon' => 'fa-flag'],
+    ['label' => __('Campanhas Ativas', 'agilizepulsar'), 'value' => $total_campaigns_active, 'icon' => 'fa-bullseye'],
+    ['label' => __('Taxa de Conversão (Ideias/Campanha)', 'agilizepulsar'), 'value' => $conversion_rate, 'icon' => 'fa-chart-simple', 'format' => 'decimal'],
     ['label' => __('Ideias Aprovadas', 'agilizepulsar'), 'value' => $ideas_approved, 'icon' => 'fa-circle-check'],
     ['label' => __('Ideias Implementadas', 'agilizepulsar'), 'value' => $ideas_implemented, 'icon' => 'fa-screwdriver-wrench']
 ];
@@ -462,10 +504,15 @@ $csv_link = 'dashboard.php?' . http_build_query($export_params + ['export' => 'c
 
   <section class="card-grid">
     <?php foreach ($card_data as $card): ?>
+    <?php
+      $value_display = isset($card['format']) && $card['format'] === 'decimal'
+        ? number_format((float)$card['value'], 1, ',', '.')
+        : number_format((int)$card['value'], 0, ',', '.');
+    ?>
     <article class="card-u dashboard-card">
       <div class="card-icon"><i class="fa-solid <?php echo htmlspecialchars($card['icon']); ?>"></i></div>
       <div class="card-info">
-        <span class="card-value"><?php echo (int)$card['value']; ?></span>
+        <span class="card-value"><?php echo $value_display; ?></span>
         <span class="card-label"><?php echo htmlspecialchars($card['label']); ?></span>
       </div>
     </article>
@@ -530,6 +577,40 @@ $csv_link = 'dashboard.php?' . http_build_query($export_params + ['export' => 'c
     </section>
   </div>
 
+  <section class="card-u">
+    <h2><i class="fa-solid fa-flag"></i> <?php echo __('Top 10 Campanhas com Mais Ideias', 'agilizepulsar'); ?></h2>
+    <table class="pulsar-table">
+      <thead>
+        <tr>
+          <th>Campanha</th>
+          <th>Ideias</th>
+          <th>Curtidas</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (count($top_campaigns) === 0): ?>
+          <tr><td colspan="5" class="empty-cell"><?php echo __('Nenhuma campanha encontrada', 'agilizepulsar'); ?></td></tr>
+        <?php else: ?>
+          <?php foreach ($top_campaigns as $campaign_row): ?>
+          <tr>
+            <td><?php echo htmlspecialchars($campaign_row['name']); ?></td>
+            <td><?php echo (int)$campaign_row['ideas_count']; ?></td>
+            <td><i class="fa-solid fa-heart"></i> <?php echo (int)$campaign_row['likes_count']; ?></td>
+            <td><?php echo Html::convDate($campaign_row['date']); ?></td>
+            <td>
+              <a href="campaign.php?id=<?php echo (int)$campaign_row['id']; ?>" class="btn-outline btn-small">
+                <?php echo __('Ver detalhes', 'agilizepulsar'); ?>
+              </a>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </section>
+
   <div class="dashboard-grid">
     <section class="card-u">
       <h2><i class="fa-solid fa-chart-pie"></i> <?php echo htmlspecialchars($status_chart_title); ?></h2>
@@ -539,6 +620,10 @@ $csv_link = 'dashboard.php?' . http_build_query($export_params + ['export' => 'c
     <section class="card-u">
       <h2><i class="fa-solid fa-chart-line"></i> <?php echo htmlspecialchars($timeline_title); ?></h2>
       <canvas id="timelineChart" height="240"></canvas>
+    </section>
+    <section class="card-u">
+      <h2><i class="fa-solid fa-chart-bar"></i> <?php echo __('Campanhas Ativas vs Encerradas', 'agilizepulsar'); ?></h2>
+      <canvas id="campaignStatusChart" height="240"></canvas>
     </section>
   </div>
 </div>
@@ -601,6 +686,36 @@ $csv_link = 'dashboard.php?' . http_build_query($export_params + ['export' => 'c
       }
     }
   });
+
+  const campaignStatusCtx = document.getElementById('campaignStatusChart');
+  if (campaignStatusCtx) {
+    new Chart(campaignStatusCtx, {
+      type: 'bar',
+      data: {
+        labels: <?php echo json_encode($campaign_status_labels); ?>,
+        datasets: [{
+          label: '<?php echo addslashes($campaign_status_dataset_label); ?>',
+          data: [<?php echo $total_campaigns_active; ?>, <?php echo $total_campaigns_closed; ?>],
+          backgroundColor: ['#00995d', '#94a3b8']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
 </script>
 
 <style>
@@ -620,6 +735,9 @@ $csv_link = 'dashboard.php?' . http_build_query($export_params + ['export' => 'c
   .btn-u.primary:hover{background:var(--u-primary-hover);transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,.1)}
   .btn-u.ghost{background:#fff;border:1px solid var(--u-border)}
   .btn-u.ghost:hover{background:var(--u-chip);border-color:var(--u-primary)}
+  .btn-outline{border:1px solid var(--u-border);border-radius:10px;padding:8px 12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:#1f2933;transition:all .2s}
+  .btn-outline:hover{border-color:var(--u-primary);color:#00995d}
+  .btn-small{font-size:0.85rem}
   .pulsar-topnav{display:flex;gap:8px;align-items:center;margin-bottom:16px;background:linear-gradient(180deg,#fff,#fbfcff);padding:12px 16px}
   .topnav-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;color:#1f2933;text-decoration:none;font-weight:600}
   .topnav-item.is-active,.topnav-item:hover{background:rgba(0,153,93,.12);color:#00995d}
