@@ -6,7 +6,7 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginAgilizepulsarTicketTab extends CommonGLPI {
 
-    public static function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
+    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
         if ($item->getType() === 'Ticket') {
             $config = PluginAgilizepulsarConfig::getConfig();
             if ($item->fields['itilcategories_id'] == $config['campaign_category_id']
@@ -18,7 +18,7 @@ class PluginAgilizepulsarTicketTab extends CommonGLPI {
         return '';
     }
 
-    public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0) {
+    public function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0) {
         if ($item->getType() === 'Ticket') {
             self::showForTicket($item);
         }
