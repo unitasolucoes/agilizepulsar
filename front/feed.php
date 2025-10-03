@@ -3,7 +3,17 @@
 include('../../../inc/includes.php');
 Session::checkLoginUser();
 
-$title = __('Pulsar – Feed');
+$user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+
+if (!PluginAgilizepulsarConfig::canView($user_profile)) {
+    Html::displayRightError();
+    exit;
+}
+
+$config = PluginAgilizepulsarConfig::getConfig();
+$menu_name = $config['menu_name'];
+
+$title = sprintf(__('%s – Feed', 'agilizepulsar'), $menu_name);
 if (Session::getCurrentInterface() == "helpdesk") {
    Html::helpHeader($title, '', 'helpdesk', 'management');
 } else {
@@ -14,6 +24,7 @@ $campaigns = PluginAgilizepulsarTicket::getCampaigns(['is_active' => true]);
 $ideas = PluginAgilizepulsarTicket::getIdeas();
 $ideas = array_slice($ideas, 0, 3);
 $ranking = PluginAgilizepulsarUserPoints::getRanking('total', 4);
+$can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -22,7 +33,7 @@ $ranking = PluginAgilizepulsarUserPoints::getRanking('total', 4);
 
   <section class="pulsar-hero card-u">
     <div class="hero-left">
-      <h1>Pulsar</h1>
+      <h1><?php echo htmlspecialchars($menu_name); ?></h1>
       <p class="pulsar-muted">Acompanhe campanhas ativas, engaje o time e transforme ideias em resultado.</p>
     </div>
     <div class="pulsar-actions">
@@ -43,10 +54,12 @@ $ranking = PluginAgilizepulsarUserPoints::getRanking('total', 4);
       <i class="fa-solid fa-chart-bar"></i>
       <span>Dashboard</span>
     </a>    
+    <?php if ($can_admin): ?>
     <a class="topnav-item" href="settings.php">
       <i class="fa-solid fa-gear"></i>
       <span>Configurações</span>
     </a>
+    <?php endif; ?>
   </nav>
 
   <div class="pulsar-search">

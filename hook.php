@@ -5,6 +5,42 @@ function plugin_agilizepulsar_install() {
     
     $migration = new Migration(PLUGIN_AGILIZEPULSAR_VERSION);
     
+    if (!$DB->tableExists('glpi_plugin_agilizepulsar_config')) {
+        $query = "CREATE TABLE `glpi_plugin_agilizepulsar_config` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `menu_name` varchar(255) DEFAULT 'Pulsar',
+            `campaign_category_id` int unsigned DEFAULT 152,
+            `idea_category_id` int unsigned DEFAULT 153,
+            `view_profile_ids` text,
+            `like_profile_ids` text,
+            `admin_profile_ids` text,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        $DB->queryOrDie($query, $DB->error());
+
+        $DB->insertOrDie('glpi_plugin_agilizepulsar_config', [
+            'menu_name'             => 'Pulsar',
+            'campaign_category_id'  => 152,
+            'idea_category_id'      => 153,
+            'view_profile_ids'      => json_encode([]),
+            'like_profile_ids'      => json_encode([]),
+            'admin_profile_ids'     => json_encode([])
+        ]);
+    }
+
+    if (!$DB->tableExists('glpi_plugin_agilizepulsar_views')) {
+        $query = "CREATE TABLE `glpi_plugin_agilizepulsar_views` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `tickets_id` int unsigned NOT NULL DEFAULT '0',
+            `users_id` int unsigned NOT NULL DEFAULT '0',
+            `viewed_at` timestamp NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `tickets_id` (`tickets_id`),
+            KEY `users_id` (`users_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        $DB->queryOrDie($query, $DB->error());
+    }
+
     if (!$DB->tableExists('glpi_plugin_agilizepulsar_likes')) {
         $query = "CREATE TABLE `glpi_plugin_agilizepulsar_likes` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -162,6 +198,8 @@ function plugin_agilizepulsar_uninstall() {
     global $DB;
     
     $tables = [
+        'glpi_plugin_agilizepulsar_config',
+        'glpi_plugin_agilizepulsar_views',
         'glpi_plugin_agilizepulsar_likes',
         'glpi_plugin_agilizepulsar_comments',
         'glpi_plugin_agilizepulsar_approvals',

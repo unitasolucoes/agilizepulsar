@@ -3,15 +3,26 @@
 include('../../../inc/includes.php');
 Session::checkLoginUser();
 
+$user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+
+if (!PluginAgilizepulsarConfig::canView($user_profile)) {
+    Html::displayRightError();
+    exit;
+}
+
+$config = PluginAgilizepulsarConfig::getConfig();
+$menu_name = $config['menu_name'];
+
 $user_id = Session::getLoginUserID();
 $ideas = PluginAgilizepulsarTicket::getIdeas(['users_id' => $user_id]);
 
-$title = __('Pulsar – Minhas Ideias');
+$title = sprintf(__('%s – Minhas Ideias', 'agilizepulsar'), $menu_name);
 if (Session::getCurrentInterface() == "helpdesk") {
    Html::helpHeader($title, '', 'helpdesk', 'management');
 } else {
    Html::header($title, $_SERVER['PHP_SELF'], 'management', 'pulsar');
 }
+$can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -20,7 +31,7 @@ if (Session::getCurrentInterface() == "helpdesk") {
 
   <section class="pulsar-hero card-u">
     <div class="hero-left">
-      <h1>Pulsar</h1>
+      <h1><?php echo htmlspecialchars($menu_name); ?></h1>
       <p class="pulsar-muted">Acompanhe suas contribuições e o status de cada ideia.</p>
     </div>
     <div class="pulsar-actions">
@@ -41,10 +52,12 @@ if (Session::getCurrentInterface() == "helpdesk") {
       <i class="fa-solid fa-chart-bar"></i>
       <span>Dashboard</span>
     </a>    
+    <?php if ($can_admin): ?>
     <a class="topnav-item" href="settings.php">
       <i class="fa-solid fa-gear"></i>
       <span>Configurações</span>
     </a>
+    <?php endif; ?>
   </nav>
 
   <div class="pulsar-filters card-u">

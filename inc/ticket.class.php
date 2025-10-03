@@ -5,36 +5,38 @@ if (!defined('GLPI_ROOT')) {
 }
 
 class PluginAgilizepulsarTicket {
-    
-    const CATEGORY_CAMPAIGN = 152;
-    const CATEGORY_IDEA = 153;
-    
+
     public static function isIdea($tickets_id) {
-        global $DB;
-        
+        $config = PluginAgilizepulsarConfig::getConfig();
+        $CATEGORY_IDEA = $config['idea_category_id'];
+
         $ticket = new Ticket();
         if (!$ticket->getFromDB($tickets_id)) {
             return false;
         }
-        
-        return $ticket->fields['itilcategories_id'] == self::CATEGORY_IDEA;
+
+        return $ticket->fields['itilcategories_id'] == $CATEGORY_IDEA;
     }
-    
+
     public static function isCampaign($tickets_id) {
-        global $DB;
-        
+        $config = PluginAgilizepulsarConfig::getConfig();
+        $CATEGORY_CAMPAIGN = $config['campaign_category_id'];
+
         $ticket = new Ticket();
         if (!$ticket->getFromDB($tickets_id)) {
             return false;
         }
-        
-        return $ticket->fields['itilcategories_id'] == self::CATEGORY_CAMPAIGN;
+
+        return $ticket->fields['itilcategories_id'] == $CATEGORY_CAMPAIGN;
     }
-    
+
     public static function getIdeas($filters = []) {
         global $DB;
-        
-        $where = ['itilcategories_id' => self::CATEGORY_IDEA];
+
+        $config = PluginAgilizepulsarConfig::getConfig();
+        $CATEGORY_IDEA = $config['idea_category_id'];
+
+        $where = ['itilcategories_id' => $CATEGORY_IDEA];
         
         if (isset($filters['campaign_id'])) {
             $where['id'] = new QuerySubQuery([
@@ -71,8 +73,11 @@ class PluginAgilizepulsarTicket {
     
     public static function getCampaigns($filters = []) {
         global $DB;
-        
-        $where = ['itilcategories_id' => self::CATEGORY_CAMPAIGN];
+
+        $config = PluginAgilizepulsarConfig::getConfig();
+        $CATEGORY_CAMPAIGN = $config['campaign_category_id'];
+
+        $where = ['itilcategories_id' => $CATEGORY_CAMPAIGN];
         
         if (isset($filters['is_active'])) {
             $where['status'] = [Ticket::INCOMING, Ticket::ASSIGNED, Ticket::PLANNED, Ticket::WAITING];
@@ -94,6 +99,9 @@ class PluginAgilizepulsarTicket {
     
     public static function getIdeasByCampaign($campaign_id) {
         global $DB;
+
+        $config = PluginAgilizepulsarConfig::getConfig();
+        $CATEGORY_IDEA = $config['idea_category_id'];
         
         $iterator = $DB->request([
             'SELECT' => 'tickets_id',
@@ -107,20 +115,21 @@ class PluginAgilizepulsarTicket {
         $ideas = [];
         foreach ($iterator as $data) {
             $ticket = new Ticket();
-            if ($ticket->getFromDB($data['tickets_id']) 
-                && $ticket->fields['itilcategories_id'] == self::CATEGORY_IDEA) {
+            if ($ticket->getFromDB($data['tickets_id'])
+                && $ticket->fields['itilcategories_id'] == $CATEGORY_IDEA) {
                 $ideas[] = self::enrichTicketData($ticket->fields);
             }
         }
-        
+
         return $ideas;
     }
-    
+
     public static function enrichTicketData($ticket_data) {
         $ticket_data['likes_count'] = PluginAgilizepulsarLike::countByTicket($ticket_data['id']);
         $ticket_data['comments_count'] = PluginAgilizepulsarComment::countByTicket($ticket_data['id']);
+        $ticket_data['views_count'] = PluginAgilizepulsarView::countByTicket($ticket_data['id']);
         $ticket_data['has_liked'] = PluginAgilizepulsarLike::userHasLiked($ticket_data['id'], Session::getLoginUserID());
-        
+
         return $ticket_data;
     }
     

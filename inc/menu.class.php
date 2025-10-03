@@ -7,9 +7,10 @@ if (!defined('GLPI_ROOT')) {
 class PluginAgilizepulsarMenu extends CommonGLPI {
     
     static $rightname = 'ticket';
-    
+
     public static function getMenuName() {
-        return __('Pulsar', 'agilizepulsar');
+        $config = PluginAgilizepulsarConfig::getConfig();
+        return $config['menu_name'];
     }
     
     public static function getMenuContent() {
@@ -38,7 +39,8 @@ class PluginAgilizepulsarMenu extends CommonGLPI {
             'icon' => 'ti ti-chart-bar'
         ];
         
-        if (Session::haveRight('config', UPDATE)) {
+        $profile_id = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+        if (PluginAgilizepulsarConfig::canAdmin($profile_id)) {
             $menu['options']['settings'] = [
                 'title' => __('Configurações', 'agilizepulsar'),
                 'page' => Plugin::getWebDir('agilizepulsar') . '/front/settings.php',

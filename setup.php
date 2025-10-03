@@ -9,6 +9,7 @@ function plugin_init_agilizepulsar() {
     
     $PLUGIN_HOOKS['csrf_compliant']['agilizepulsar'] = true;
     
+    Plugin::registerClass('PluginAgilizepulsarConfig');
     Plugin::registerClass('PluginAgilizepulsarMenu');
     Plugin::registerClass('PluginAgilizepulsarTicket');
     Plugin::registerClass('PluginAgilizepulsarLike');
@@ -20,6 +21,9 @@ function plugin_init_agilizepulsar() {
     Plugin::registerClass('PluginAgilizepulsarFastReply');
     Plugin::registerClass('PluginAgilizepulsarApproval');
     Plugin::registerClass('PluginAgilizepulsarLog');
+    Plugin::registerClass('PluginAgilizepulsarView');
+    Plugin::registerClass('PluginAgilizepulsarTicketTab', ['addtabon' => 'Ticket']);
+    Plugin::registerClass('PluginAgilizepulsarDashboard');
     
     $plugin = new Plugin();
     if ($plugin->isInstalled('agilizepulsar') && $plugin->isActivated('agilizepulsar')) {
@@ -30,6 +34,7 @@ function plugin_init_agilizepulsar() {
         
         $PLUGIN_HOOKS['add_css']['agilizepulsar'][] = 'css/pulsar.css';
         $PLUGIN_HOOKS['add_javascript']['agilizepulsar'][] = 'js/pulsar.js';
+        $PLUGIN_HOOKS['dashboard_cards']['agilizepulsar'] = ['PluginAgilizepulsarDashboard', 'dashboardCards'];
     }
 }
 

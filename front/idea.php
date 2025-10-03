@@ -3,6 +3,16 @@
 include('../../../inc/includes.php');
 Session::checkLoginUser();
 
+$user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
+
+if (!PluginAgilizepulsarConfig::canView($user_profile)) {
+    Html::displayRightError();
+    exit;
+}
+
+$config = PluginAgilizepulsarConfig::getConfig();
+$menu_name = $config['menu_name'];
+
 $tickets_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (!PluginAgilizepulsarTicket::isIdea($tickets_id)) {
@@ -14,18 +24,23 @@ if (!$ticket->getFromDB($tickets_id)) {
     Html::displayErrorAndDie(__('Item not found'));
 }
 
+PluginAgilizepulsarView::addView($tickets_id, Session::getLoginUserID());
+
 $idea = PluginAgilizepulsarTicket::enrichTicketData($ticket->fields);
 $form_answers = PluginAgilizepulsarTicket::getFormAnswers($tickets_id);
 $coauthors = PluginAgilizepulsarTicket::getCoauthors($tickets_id);
 $comments = PluginAgilizepulsarComment::getByTicket($tickets_id);
 $approvals = PluginAgilizepulsarApproval::getByTicket($tickets_id);
 
-$title = __('Pulsar – ') . $idea['name'];
+$title = sprintf(__('%s – %s', 'agilizepulsar'), $menu_name, $idea['name']);
 if (Session::getCurrentInterface() == "helpdesk") {
    Html::helpHeader($title, '', 'helpdesk', 'management');
 } else {
    Html::header($title, $_SERVER['PHP_SELF'], 'management', 'pulsar');
 }
+
+$can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
+$can_like = PluginAgilizepulsarConfig::canLike($user_profile);
 
 $user = new User();
 $user->getFromDB($idea['users_id_recipient']);
@@ -37,7 +52,7 @@ $user->getFromDB($idea['users_id_recipient']);
 
   <section class="pulsar-hero card-u">
     <div class="hero-left">
-      <h1>Pulsar</h1>
+      <h1><?php echo htmlspecialchars($menu_name); ?></h1>
       <p class="pulsar-muted">Detalhes da Ideia</p>
     </div>
     <div class="pulsar-actions">
@@ -58,9 +73,11 @@ $user->getFromDB($idea['users_id_recipient']);
     <a class="topnav-item" href="dashboard.php">
       <i class="fa-solid fa-chart-bar"></i><span>Dashboard</span>
     </a>
+    <?php if ($can_admin): ?>
     <a class="topnav-item" href="settings.php">
       <i class="fa-solid fa-gear"></i><span>Configurações</span>
     </a>
+    <?php endif; ?>
   </nav>
 
   <div class="idea-detail-container">
@@ -82,6 +99,7 @@ $user->getFromDB($idea['users_id_recipient']);
           <div class="idea-stats">
             <span class="stat-item"><i class="fa-solid fa-heart"></i> <span id="likes-count"><?php echo $idea['likes_count']; ?></span></span>
             <span class="stat-item"><i class="fa-solid fa-comment"></i> <?php echo $idea['comments_count']; ?></span>
+            <span class="stat-item"><i class="fa-solid fa-eye"></i> <?php echo $idea['views_count']; ?></span>
           </div>
         </div>
       </div>
@@ -163,7 +181,11 @@ $user->getFromDB($idea['users_id_recipient']);
             </div>
 
             <div class="idea-actions">
-              <button class="btn-u primary full-width" id="btn-like" data-ticket="<?php echo $tickets_id; ?>" data-liked="<?php echo $idea['has_liked'] ? '1' : '0'; ?>">
+              <div class="stat-item">
+                <i class="fa-solid fa-eye"></i>
+                <?php echo $idea['views_count']; ?> visualizações
+              </div>
+              <button class="btn-u primary full-width" id="btn-like" data-ticket="<?php echo $tickets_id; ?>" data-liked="<?php echo $idea['has_liked'] ? '1' : '0'; ?>" data-can-like="<?php echo $can_like ? '1' : '0'; ?>" <?php echo $can_like ? '' : 'disabled'; ?>>
                 <i class="fa-solid fa-heart"></i> <?php echo $idea['has_liked'] ? 'Descurtir' : 'Curtir'; ?>
               </button>
               <button class="btn-u ghost full-width" onclick="navigator.clipboard.writeText(window.location.href)">
@@ -194,6 +216,7 @@ $user->getFromDB($idea['users_id_recipient']);
   .btn-u.primary:hover{background:var(--u-primary-hover);transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,.1)}
   .btn-u.ghost{background:#fff;border:1px solid var(--u-border)}
   .btn-u.ghost:hover{background:var(--u-chip);border-color:var(--u-primary)}
+  .btn-u[disabled]{opacity:.6;cursor:not-allowed}
   .btn-u.small{padding:8px 12px;font-size:.875rem}
   .full-width{width:100%}
 
@@ -245,7 +268,7 @@ $user->getFromDB($idea['users_id_recipient']);
   .idea-actions{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
 </style>
 
-<script src="<?php echo $CFG_GLPI['root_doc']; ?>/plugins/agilizepulsar/js/pulsar.js"></script>
+<script src="<?php echo htmlspecialchars($CFG_GLPI['root_doc']); ?>/plugins/agilizepulsar/js/pulsar.js"></script>
 
 <script>
 (function() {
@@ -253,16 +276,21 @@ $user->getFromDB($idea['users_id_recipient']);
   const likeCount = document.getElementById('likes-count');
   const ticketId = btnLike.dataset.ticket;
   let liked = btnLike.dataset.liked === '1';
+  const canLike = btnLike.dataset.canLike === '1';
 
-  btnLike.addEventListener('click', function() {
-    PulsarLike.toggle(ticketId, function(response) {
-      if (response.success) {
-        liked = response.liked;
-        likeCount.textContent = response.count;
-        btnLike.innerHTML = liked ? '<i class="fa-solid fa-heart"></i> Descurtir' : '<i class="fa-solid fa-heart"></i> Curtir';
-      }
+  if (canLike) {
+    btnLike.addEventListener('click', function() {
+      PulsarLike.toggle(ticketId, function(response) {
+        if (response.success) {
+          liked = response.liked;
+          likeCount.textContent = response.count;
+          btnLike.innerHTML = liked ? '<i class="fa-solid fa-heart"></i> Descurtir' : '<i class="fa-solid fa-heart"></i> Curtir';
+        }
+      });
     });
-  });
+  } else {
+    btnLike.setAttribute('title', 'Sem permissão para curtir');
+  }
 
   const btnComment = document.getElementById('btn-add-comment');
   const textarea = document.getElementById('comment-text');
