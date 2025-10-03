@@ -14,26 +14,20 @@ class PluginAgilizepulsarLike extends CommonDBTM {
     
     public static function addLike($tickets_id, $users_id) {
         global $DB;
-        
-        if (!PluginAgilizepulsarTicket::isIdea($tickets_id)) {
+
+        if (!PluginAgilizepulsarTicket::isIdea($tickets_id)
+            && !PluginAgilizepulsarTicket::isCampaign($tickets_id)) {
             return false;
         }
-        
-        $ticket = new Ticket();
-        $ticket->getFromDB($tickets_id);
-        
-        if ($ticket->fields['users_id_recipient'] == $users_id) {
-            return false;
-        }
-        
+
         if (self::userHasLiked($tickets_id, $users_id)) {
             return false;
         }
-        
-        $like = new self();
+
+        $like   = new self();
         $result = $like->add([
-            'tickets_id' => $tickets_id,
-            'users_id' => $users_id,
+            'tickets_id'    => $tickets_id,
+            'users_id'      => $users_id,
             'date_creation' => $_SESSION['glpi_currenttime']
         ]);
         

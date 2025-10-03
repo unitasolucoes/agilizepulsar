@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $menu_name_post = trim($_POST['menu_name'] ?? '');
     $campaign_post  = (int)($_POST['campaign_category_id'] ?? 0);
     $idea_post      = (int)($_POST['idea_category_id'] ?? 0);
+    $idea_form_post = trim($_POST['idea_form_url'] ?? '');
     $view_post      = isset($_POST['view_profile_ids']) ? array_map('intval', (array)$_POST['view_profile_ids']) : [];
     $like_post      = isset($_POST['like_profile_ids']) ? array_map('intval', (array)$_POST['like_profile_ids']) : [];
     $admin_post     = isset($_POST['admin_profile_ids']) ? array_map('intval', (array)$_POST['admin_profile_ids']) : [];
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'menu_name'            => $menu_name_post !== '' ? $menu_name_post : 'Pulsar',
         'campaign_category_id' => $campaign_post ?: $campaign_category_id,
         'idea_category_id'     => $idea_post ?: $idea_category_id,
+        'idea_form_url'        => $idea_form_post !== '' ? $idea_form_post : ($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'),
         'view_profile_ids'     => json_encode(array_values(array_unique($view_post))),
         'like_profile_ids'     => json_encode(array_values(array_unique($like_post))),
         'admin_profile_ids'    => json_encode(array_values(array_unique($admin_post)))
@@ -148,6 +150,11 @@ $csrf_token = Session::getNewCSRFToken();
               </option>
             <?php endforeach; ?>
           </select>
+        </div>
+        <div class="form-group">
+          <label for="idea_form_url">URL do formulário de ideias</label>
+          <input type="url" id="idea_form_url" name="idea_form_url" value="<?php echo htmlspecialchars($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'); ?>" required>
+          <small class="pulsar-muted">Defina o endereço do formulário FormCreator utilizado para registrar novas ideias.</small>
         </div>
       </div>
     </section>

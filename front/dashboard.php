@@ -173,33 +173,67 @@ $ideas_implemented = $countTickets([$idea_category_id], [Ticket::CLOSED]);
 
 $top_likes = [];
 if (!empty($active_categories)) {
-    $whereSql = $buildWhere($active_categories, 't');
-    $sql = "SELECT t.id, t.name, t.users_id_recipient, t.itilcategories_id, COUNT(l.id) AS likes_count
-            FROM glpi_tickets t
-            LEFT JOIN glpi_plugin_agilizepulsar_likes l ON t.id = l.tickets_id
-            WHERE $whereSql
-            GROUP BY t.id, t.name, t.users_id_recipient, t.itilcategories_id
-            ORDER BY likes_count DESC, t.name ASC
-            LIMIT 10";
+    $likes_where = [
+        't.itilcategories_id' => array_map('intval', $active_categories)
+    ];
 
-    $iterator = $DB->request($sql);
+    if ($startDateStr) {
+        $likes_where[] = ['>=', 't.date', $startDateStr];
+    }
+
+    if ($endDateStr) {
+        $likes_where[] = ['<=', 't.date', $endDateStr];
+    }
+
+    $iterator = $DB->request([
+        'SELECT' => [
+            't.id',
+            't.name',
+            't.users_id_recipient',
+            't.itilcategories_id',
+            'u.realname',
+            'u.firstname',
+            'u.name AS username',
+            'likes_count' => new QueryExpression('COUNT(l.id)')
+        ],
+        'FROM' => 'glpi_tickets AS t',
+        'LEFT JOIN' => [
+            'glpi_plugin_agilizepulsar_likes AS l' => [
+                'ON' => ['l' => 'tickets_id', 't' => 'id']
+            ],
+            'glpi_users AS u' => [
+                'ON' => ['u' => 'id', 't' => 'users_id_recipient']
+            ]
+        ],
+        'WHERE' => $likes_where,
+        'GROUPBY' => ['t.id', 't.name', 't.users_id_recipient', 't.itilcategories_id', 'u.realname', 'u.firstname', 'u.name'],
+        'ORDER' => ['likes_count DESC', 't.name ASC'],
+        'LIMIT' => 10
+    ]);
+
     foreach ($iterator as $row) {
         $userName = __('Não informado', 'agilizepulsar');
-        if (!empty($row['users_id_recipient'])) {
-            $user = new User();
-            if ($user->getFromDB($row['users_id_recipient'])) {
-                $userName = $user->getFriendlyName();
+        if (!empty($row['firstname']) || !empty($row['realname'])) {
+            $potential = trim(($row['firstname'] ?? '') . ' ' . ($row['realname'] ?? ''));
+            if ($potential !== '') {
+                $userName = $potential;
             }
         }
+
+        if ($userName === __('Não informado', 'agilizepulsar') && !empty($row['username'])) {
+            $userName = $row['username'];
+        }
+
         $link = 'idea.php?id=' . $row['id'];
         if ((int)$row['itilcategories_id'] !== $idea_category_id) {
             $link = rtrim($CFG_GLPI['url_base'] ?? '', '/') . '/front/ticket.form.php?id=' . $row['id'];
         }
+
         $top_likes[] = [
             'id'     => $row['id'],
             'name'   => $row['name'],
             'author' => $userName,
-            'count'  => (int)$row['likes_count'],
+            'count'  => (int) $row['likes_count'],
             'link'   => $link
         ];
     }
@@ -207,33 +241,67 @@ if (!empty($active_categories)) {
 
 $top_views = [];
 if (!empty($active_categories)) {
-    $whereSql = $buildWhere($active_categories, 't');
-    $sql = "SELECT t.id, t.name, t.users_id_recipient, t.itilcategories_id, COUNT(DISTINCT v.users_id) AS views_count
-            FROM glpi_tickets t
-            LEFT JOIN glpi_plugin_agilizepulsar_views v ON t.id = v.tickets_id
-            WHERE $whereSql
-            GROUP BY t.id, t.name, t.users_id_recipient, t.itilcategories_id
-            ORDER BY views_count DESC, t.name ASC
-            LIMIT 10";
+    $views_where = [
+        't.itilcategories_id' => array_map('intval', $active_categories)
+    ];
 
-    $iterator = $DB->request($sql);
+    if ($startDateStr) {
+        $views_where[] = ['>=', 't.date', $startDateStr];
+    }
+
+    if ($endDateStr) {
+        $views_where[] = ['<=', 't.date', $endDateStr];
+    }
+
+    $iterator = $DB->request([
+        'SELECT' => [
+            't.id',
+            't.name',
+            't.users_id_recipient',
+            't.itilcategories_id',
+            'u.realname',
+            'u.firstname',
+            'u.name AS username',
+            'views_count' => new QueryExpression('COUNT(DISTINCT v.users_id)')
+        ],
+        'FROM' => 'glpi_tickets AS t',
+        'LEFT JOIN' => [
+            'glpi_plugin_agilizepulsar_views AS v' => [
+                'ON' => ['v' => 'tickets_id', 't' => 'id']
+            ],
+            'glpi_users AS u' => [
+                'ON' => ['u' => 'id', 't' => 'users_id_recipient']
+            ]
+        ],
+        'WHERE' => $views_where,
+        'GROUPBY' => ['t.id', 't.name', 't.users_id_recipient', 't.itilcategories_id', 'u.realname', 'u.firstname', 'u.name'],
+        'ORDER' => ['views_count DESC', 't.name ASC'],
+        'LIMIT' => 10
+    ]);
+
     foreach ($iterator as $row) {
         $userName = __('Não informado', 'agilizepulsar');
-        if (!empty($row['users_id_recipient'])) {
-            $user = new User();
-            if ($user->getFromDB($row['users_id_recipient'])) {
-                $userName = $user->getFriendlyName();
+        if (!empty($row['firstname']) || !empty($row['realname'])) {
+            $potential = trim(($row['firstname'] ?? '') . ' ' . ($row['realname'] ?? ''));
+            if ($potential !== '') {
+                $userName = $potential;
             }
         }
+
+        if ($userName === __('Não informado', 'agilizepulsar') && !empty($row['username'])) {
+            $userName = $row['username'];
+        }
+
         $link = 'idea.php?id=' . $row['id'];
         if ((int)$row['itilcategories_id'] !== $idea_category_id) {
             $link = rtrim($CFG_GLPI['url_base'] ?? '', '/') . '/front/ticket.form.php?id=' . $row['id'];
         }
+
         $top_views[] = [
             'id'     => $row['id'],
             'name'   => $row['name'],
             'author' => $userName,
-            'count'  => (int)$row['views_count'],
+            'count'  => (int) $row['views_count'],
             'link'   => $link
         ];
     }

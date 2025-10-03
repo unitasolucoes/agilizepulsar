@@ -12,6 +12,7 @@ if (!PluginAgilizepulsarConfig::canView($user_profile)) {
 
 $config = PluginAgilizepulsarConfig::getConfig();
 $menu_name = $config['menu_name'];
+$idea_form_url = $config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121';
 
 $title = sprintf(__('%s – Todas as Ideias', 'agilizepulsar'), $menu_name);
 if (Session::getCurrentInterface() == "helpdesk") {
@@ -38,7 +39,7 @@ $can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
       <p class="pulsar-muted">Explore todas as ideias enviadas pela comunidade.</p>
     </div>
     <div class="pulsar-actions">
-      <a href="/marketplace/formcreator/front/formdisplay.php?id=121" class="btn-u primary"><i class="fa-solid fa-plus"></i> Nova Ideia</a>
+      <a href="<?php echo htmlspecialchars($idea_form_url); ?>" class="btn-u primary"><i class="fa-solid fa-plus"></i> Nova Ideia</a>
       <a href="feed.php" class="btn-u ghost"><i class="fa-solid fa-arrow-left"></i> Voltar ao Feed</a>
     </div>
   </section>
@@ -124,12 +125,16 @@ $can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
         elseif ($idea['status'] == Ticket::CLOSED) $statusClass = 'implemented';
         elseif ($idea['status'] == Ticket::WAITING) $statusClass = 'warn';
       ?>
-      <article class="idea-card card-u" 
-               data-status="<?php echo $idea['status']; ?>" 
-               data-title="<?php echo htmlspecialchars(strtolower($idea['name'])); ?>"
-               data-content="<?php echo htmlspecialchars(strtolower($idea['content'])); ?>"
-               data-likes="<?php echo $idea['likes_count']; ?>"
-               data-comments="<?php echo $idea['comments_count']; ?>"
+      <?php
+        $idea_title_attr = htmlspecialchars(strtolower(strip_tags((string) $idea['name'])));
+        $idea_content_attr = htmlspecialchars(strtolower(strip_tags((string) $idea['content'])));
+      ?>
+      <article class="idea-card card-u"
+               data-status="<?php echo (int) $idea['status']; ?>"
+               data-title="<?php echo $idea_title_attr; ?>"
+               data-content="<?php echo $idea_content_attr; ?>"
+               data-likes="<?php echo (int) $idea['likes_count']; ?>"
+               data-comments="<?php echo (int) $idea['comments_count']; ?>"
                data-date="<?php echo strtotime($idea['date']); ?>"
                data-campaign="">
         
@@ -180,7 +185,7 @@ $can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
           <p class="empty-title">Nenhuma ideia encontrada</p>
           <p class="empty-subtitle pulsar-muted">Seja o primeiro a compartilhar uma ideia!</p>
           <div class="empty-action">
-            <a href="/marketplace/formcreator/front/formdisplay.php?id=121" class="btn-u primary">
+            <a href="<?php echo htmlspecialchars($idea_form_url); ?>" class="btn-u primary">
               <i class="fa-solid fa-plus"></i> Enviar primeira ideia
             </a>
           </div>
