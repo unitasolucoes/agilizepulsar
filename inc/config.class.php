@@ -41,7 +41,11 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
         return $config->add($data);
     }
 
-    public static function canView($user_profile_id) {
+    public static function canView($user_profile_id = null) {
+        if ($user_profile_id === null) {
+            return parent::canView();
+        }
+
         $config  = self::getConfig();
         $allowed = json_decode($config['view_profile_ids'] ?? '[]', true) ?: [];
 
