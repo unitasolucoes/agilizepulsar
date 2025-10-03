@@ -53,7 +53,8 @@ function plugin_agilizepulsar_install() {
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_view` (`tickets_id`, `users_id`),
             KEY `tickets_id` (`tickets_id`),
-            KEY `users_id` (`users_id`)
+            KEY `users_id` (`users_id`),
+            KEY `ticket_date` (`tickets_id`, `viewed_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
         $DB->queryOrDie($query, $DB->error());
     }
