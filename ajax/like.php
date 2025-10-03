@@ -6,6 +6,15 @@ header('Content-Type: application/json');
 
 Session::checkLoginUser();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && method_exists('Session', 'checkCSRF')) {
+    if (!isset($_POST['_glpi_csrf_token'])) {
+        echo json_encode(['success' => false, 'message' => 'Token inválido']);
+        exit;
+    }
+
+    Session::checkCSRF($_POST);
+}
+
 $user_profile = $_SESSION['glpiactiveprofile']['id'] ?? 0;
 if (!PluginAgilizepulsarConfig::canLike($user_profile)) {
     echo json_encode(['success' => false, 'message' => 'Sem permissão']);

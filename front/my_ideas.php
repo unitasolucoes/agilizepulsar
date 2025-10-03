@@ -12,6 +12,7 @@ if (!PluginAgilizepulsarConfig::canView($user_profile)) {
 
 $config = PluginAgilizepulsarConfig::getConfig();
 $menu_name = $config['menu_name'];
+$idea_form_url = $config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121';
 
 $user_id = Session::getLoginUserID();
 $ideas = PluginAgilizepulsarTicket::getIdeas(['users_id' => $user_id]);
@@ -35,7 +36,7 @@ $can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
       <p class="pulsar-muted">Acompanhe suas contribuições e o status de cada ideia.</p>
     </div>
     <div class="pulsar-actions">
-      <a href="/marketplace/formcreator/front/formdisplay.php?id=121" class="btn-u primary"><i class="fa-solid fa-plus"></i> Nova Ideia</a>
+      <a href="<?php echo htmlspecialchars($idea_form_url); ?>" class="btn-u primary"><i class="fa-solid fa-plus"></i> Nova Ideia</a>
     </div>
   </section>
 
@@ -141,7 +142,7 @@ $can_admin = PluginAgilizepulsarConfig::canAdmin($user_profile);
           <p class="empty-title h3">Nenhuma ideia encontrada</p>
           <p class="empty-subtitle text-muted">Você ainda não enviou nenhuma ideia.</p>
           <div class="empty-action">
-            <a href="/marketplace/formcreator/front/formdisplay.php?id=121" class="btn-u primary">
+            <a href="<?php echo htmlspecialchars($idea_form_url); ?>" class="btn-u primary">
               <i class="fa-solid fa-plus"></i> Enviar primeira ideia
             </a>
           </div>

@@ -11,6 +11,7 @@ function plugin_agilizepulsar_install() {
             `menu_name` varchar(255) DEFAULT 'Pulsar',
             `campaign_category_id` int unsigned DEFAULT 152,
             `idea_category_id` int unsigned DEFAULT 153,
+            `idea_form_url` varchar(255) DEFAULT '/marketplace/formcreator/front/formdisplay.php?id=121',
             `view_profile_ids` text,
             `like_profile_ids` text,
             `admin_profile_ids` text,
@@ -22,10 +23,23 @@ function plugin_agilizepulsar_install() {
             'menu_name'             => 'Pulsar',
             'campaign_category_id'  => 152,
             'idea_category_id'      => 153,
+            'idea_form_url'         => '/marketplace/formcreator/front/formdisplay.php?id=121',
             'view_profile_ids'      => json_encode([]),
             'like_profile_ids'      => json_encode([]),
             'admin_profile_ids'     => json_encode([])
         ]);
+    }
+
+    if ($DB->tableExists('glpi_plugin_agilizepulsar_config')
+        && !$DB->fieldExists('glpi_plugin_agilizepulsar_config', 'idea_form_url')) {
+        $migration->addField('glpi_plugin_agilizepulsar_config', 'idea_form_url', 'string');
+        $migration->migrationOneTable('glpi_plugin_agilizepulsar_config');
+
+        $DB->updateOrDie(
+            'glpi_plugin_agilizepulsar_config',
+            ['idea_form_url' => '/marketplace/formcreator/front/formdisplay.php?id=121'],
+            []
+        );
     }
 
     if (!$DB->tableExists('glpi_plugin_agilizepulsar_views')) {
@@ -36,7 +50,8 @@ function plugin_agilizepulsar_install() {
             `viewed_at` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `tickets_id` (`tickets_id`),
-            KEY `users_id` (`users_id`)
+            KEY `users_id` (`users_id`),
+            KEY `ticket_date` (`tickets_id`, `viewed_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
         $DB->queryOrDie($query, $DB->error());
     }
@@ -51,11 +66,12 @@ function plugin_agilizepulsar_install() {
             UNIQUE KEY `ticket_user` (`tickets_id`, `users_id`),
             KEY `tickets_id` (`tickets_id`),
             KEY `users_id` (`users_id`),
-            KEY `date_creation` (`date_creation`)
+            KEY `date_creation` (`date_creation`),
+            KEY `ticket_date` (`tickets_id`, `date_creation`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
         $DB->queryOrDie($query, $DB->error());
     }
-    
+
     if (!$DB->tableExists('glpi_plugin_agilizepulsar_comments')) {
         $query = "CREATE TABLE `glpi_plugin_agilizepulsar_comments` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -66,9 +82,66 @@ function plugin_agilizepulsar_install() {
             PRIMARY KEY (`id`),
             KEY `tickets_id` (`tickets_id`),
             KEY `users_id` (`users_id`),
-            KEY `date_creation` (`date_creation`)
+            KEY `date_creation` (`date_creation`),
+            KEY `ticket_date` (`tickets_id`, `date_creation`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
         $DB->queryOrDie($query, $DB->error());
+    }
+
+    $schema = $DB->dbdefault;
+
+    if ($DB->tableExists('glpi_plugin_agilizepulsar_likes')) {
+        $indexExists = $DB->request([
+            'SELECT' => '1',
+            'FROM'   => 'INFORMATION_SCHEMA.STATISTICS',
+            'WHERE'  => [
+                'TABLE_SCHEMA' => $schema,
+                'TABLE_NAME'   => 'glpi_plugin_agilizepulsar_likes',
+                'INDEX_NAME'   => 'ticket_date'
+            ],
+            'LIMIT'  => 1
+        ]);
+
+        if (count($indexExists) === 0) {
+            $migration->addKey('glpi_plugin_agilizepulsar_likes', 'ticket_date', ['tickets_id', 'date_creation']);
+            $migration->migrationOneTable('glpi_plugin_agilizepulsar_likes');
+        }
+    }
+
+    if ($DB->tableExists('glpi_plugin_agilizepulsar_comments')) {
+        $indexExists = $DB->request([
+            'SELECT' => '1',
+            'FROM'   => 'INFORMATION_SCHEMA.STATISTICS',
+            'WHERE'  => [
+                'TABLE_SCHEMA' => $schema,
+                'TABLE_NAME'   => 'glpi_plugin_agilizepulsar_comments',
+                'INDEX_NAME'   => 'ticket_date'
+            ],
+            'LIMIT'  => 1
+        ]);
+
+        if (count($indexExists) === 0) {
+            $migration->addKey('glpi_plugin_agilizepulsar_comments', 'ticket_date', ['tickets_id', 'date_creation']);
+            $migration->migrationOneTable('glpi_plugin_agilizepulsar_comments');
+        }
+    }
+
+    if ($DB->tableExists('glpi_plugin_agilizepulsar_views')) {
+        $indexExists = $DB->request([
+            'SELECT' => '1',
+            'FROM'   => 'INFORMATION_SCHEMA.STATISTICS',
+            'WHERE'  => [
+                'TABLE_SCHEMA' => $schema,
+                'TABLE_NAME'   => 'glpi_plugin_agilizepulsar_views',
+                'INDEX_NAME'   => 'ticket_date'
+            ],
+            'LIMIT'  => 1
+        ]);
+
+        if (count($indexExists) === 0) {
+            $migration->addKey('glpi_plugin_agilizepulsar_views', 'ticket_date', ['tickets_id', 'viewed_at']);
+            $migration->migrationOneTable('glpi_plugin_agilizepulsar_views');
+        }
     }
     
     if (!$DB->tableExists('glpi_plugin_agilizepulsar_approvals')) {

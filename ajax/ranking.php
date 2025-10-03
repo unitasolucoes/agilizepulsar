@@ -6,6 +6,18 @@ header('Content-Type: application/json');
 
 Session::checkLoginUser();
 
+if (method_exists('Session', 'checkCSRF')) {
+    if (!isset($_GET['_glpi_csrf_token'])) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Token inválido'
+        ]);
+        exit;
+    }
+
+    Session::checkCSRF($_GET);
+}
+
 $period = isset($_GET['period']) ? $_GET['period'] : 'total';
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
 
