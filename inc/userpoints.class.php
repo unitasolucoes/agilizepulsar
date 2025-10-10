@@ -12,10 +12,15 @@ class PluginAgilizepulsarUserPoints extends CommonDBTM {
         return __('User Points', 'agilizepulsar');
     }
     
-    public static function addPoints($users_id, $action_type, $reference_id = 0) {
+    public static function addPoints($users_id, $action_type, $reference_id = 0, $allow_duplicate = true) {
         $config = PluginAgilizepulsarRankingConfig::getPointsValue($action_type);
-        
+
         if ($config <= 0) {
+            return false;
+        }
+
+        if (!$allow_duplicate
+            && PluginAgilizepulsarPointsHistory::hasRecord($users_id, $action_type, $reference_id)) {
             return false;
         }
         
@@ -68,25 +73,29 @@ class PluginAgilizepulsarUserPoints extends CommonDBTM {
     
     public static function getOrCreateUserPoints($users_id) {
         global $DB;
-        
+
         $userPoints = new self();
-        
+
         $iterator = $DB->request([
             'FROM' => self::getTable(),
             'WHERE' => ['users_id' => $users_id]
         ]);
-        
+
         if (count($iterator) > 0) {
             $data = $iterator->current();
             $userPoints->getFromDB($data['id']);
         } else {
-            $userPoints->add([
+            $newID = $userPoints->add([
                 'users_id' => $users_id,
                 'points_total' => 0,
                 'points_month' => 0,
                 'points_year' => 0,
                 'date_mod' => $_SESSION['glpi_currenttime']
             ]);
+
+            if ($newID) {
+                $userPoints->getFromDB($newID);
+            }
         }
         
         return $userPoints;
