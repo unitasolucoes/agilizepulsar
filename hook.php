@@ -224,7 +224,7 @@ function plugin_agilizepulsar_install() {
 
 function plugin_agilizepulsar_uninstall() {
     global $DB;
-    
+
     $tables = [
         'glpi_plugin_agilizepulsar_configs',
         'glpi_plugin_agilizepulsar_views',
@@ -238,10 +238,103 @@ function plugin_agilizepulsar_uninstall() {
         'glpi_plugin_agilizepulsar_fastreplies',
         'glpi_plugin_agilizepulsar_logs'
     ];
-    
+
     foreach ($tables as $table) {
         $DB->queryOrDie("DROP TABLE IF EXISTS `$table`", $DB->error());
     }
-    
+
+    return true;
+}
+
+function plugin_item_add_agilizepulsar(CommonDBTM $item) {
+    if (!($item instanceof Ticket)) {
+        return true;
+    }
+
+    $config = PluginAgilizepulsarConfig::getConfig();
+    $idea_category_id = (int)($config['idea_category_id'] ?? 0);
+
+    if ($idea_category_id <= 0) {
+        return true;
+    }
+
+    $ticket_category = (int)($item->fields['itilcategories_id'] ?? 0);
+    if ($ticket_category !== $idea_category_id) {
+        return true;
+    }
+
+    $users_id = (int)($item->fields['users_id_recipient'] ?? 0);
+    if ($users_id <= 0) {
+        $users_id = (int)($item->fields['users_id_lastupdater'] ?? 0);
+    }
+    if ($users_id <= 0) {
+        $users_id = (int)($item->fields['users_id'] ?? 0);
+    }
+
+    $ticket_id = (int)($item->getID() ?: ($item->fields['id'] ?? 0));
+
+    if ($users_id > 0 && $ticket_id > 0) {
+        if (PluginAgilizepulsarUserPoints::addPoints($users_id, 'submitted_idea', $ticket_id, false)) {
+            PluginAgilizepulsarLog::add('idea_submitted', $users_id, [
+                'tickets_id' => $ticket_id
+            ]);
+        }
+    }
+
+    return true;
+}
+
+function plugin_item_update_agilizepulsar(CommonDBTM $item) {
+    if (!($item instanceof Ticket)) {
+        return true;
+    }
+
+    $config = PluginAgilizepulsarConfig::getConfig();
+    $idea_category_id = (int)($config['idea_category_id'] ?? 0);
+
+    if ($idea_category_id <= 0) {
+        return true;
+    }
+
+    $ticket_category = (int)($item->fields['itilcategories_id'] ?? 0);
+    if ($ticket_category !== $idea_category_id) {
+        return true;
+    }
+
+    $old_status = isset($item->oldvalues['status']) ? (int)$item->oldvalues['status'] : null;
+    $new_status = isset($item->fields['status']) ? (int)$item->fields['status'] : $old_status;
+
+    if ($new_status === null || $old_status === $new_status) {
+        return true;
+    }
+
+    $users_id = (int)($item->fields['users_id_recipient'] ?? 0);
+    if ($users_id <= 0) {
+        $users_id = (int)($item->fields['users_id_lastupdater'] ?? 0);
+    }
+    if ($users_id <= 0) {
+        $users_id = (int)($item->fields['users_id'] ?? 0);
+    }
+
+    $ticket_id = (int)($item->getID() ?: ($item->fields['id'] ?? 0));
+
+    if ($users_id <= 0 || $ticket_id <= 0) {
+        return true;
+    }
+
+    if ($new_status === Ticket::SOLVED) {
+        if (PluginAgilizepulsarUserPoints::addPoints($users_id, 'approved_idea', $ticket_id, false)) {
+            PluginAgilizepulsarLog::add('idea_approved', $users_id, [
+                'tickets_id' => $ticket_id
+            ]);
+        }
+    } elseif ($new_status === Ticket::CLOSED) {
+        if (PluginAgilizepulsarUserPoints::addPoints($users_id, 'implemented_idea', $ticket_id, false)) {
+            PluginAgilizepulsarLog::add('idea_implemented', $users_id, [
+                'tickets_id' => $ticket_id
+            ]);
+        }
+    }
+
     return true;
 }

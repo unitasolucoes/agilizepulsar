@@ -21,6 +21,26 @@ class PluginAgilizepulsarPointsHistory extends CommonDBTM {
 
         return $history->add($data);
     }
+
+    public static function hasRecord($users_id, $action_type, $reference_id = 0) {
+        global $DB;
+
+        if ($users_id <= 0 || empty($action_type)) {
+            return false;
+        }
+
+        $iterator = $DB->request([
+            'FROM' => self::getTable(),
+            'WHERE' => [
+                'users_id' => $users_id,
+                'action_type' => $action_type,
+                'reference_id' => $reference_id
+            ],
+            'LIMIT' => 1
+        ]);
+
+        return count($iterator) > 0;
+    }
     
     public static function getByUser($users_id, $limit = 50) {
         global $DB;
