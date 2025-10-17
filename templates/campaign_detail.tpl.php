@@ -9,6 +9,9 @@ if (!defined('GLPI_ROOT')) {
 
 $plugin_web = Plugin::getWebDir('agilizepulsar');
 $ideas = $specific_data['ideas'] ?? [];
+$idea_form_url = PluginAgilizepulsarConfig::getIdeaFormUrl();
+$join_char = (strpos($idea_form_url, '?') === false) ? '?' : '&';
+$idea_form_campaign_url = sprintf('%s%scampanha_id=%d', $idea_form_url, $join_char, $tickets_id);
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -22,7 +25,7 @@ $ideas = $specific_data['ideas'] ?? [];
       <p class="pulsar-muted">Campanha de coleta de ideias</p>
     </div>
     <div class="pulsar-actions">
-      <a href="<?php echo htmlspecialchars($config['idea_form_url']); ?>" class="btn-u primary">
+      <a href="<?php echo htmlspecialchars($idea_form_campaign_url); ?>" class="btn-u primary">
         <i class="fa-solid fa-lightbulb"></i> Participar com uma Ideia
       </a>
       <a href="feed.php" class="btn-u ghost"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
@@ -141,7 +144,7 @@ $ideas = $specific_data['ideas'] ?? [];
           <div class="empty-state">
             <i class="fa-solid fa-lightbulb"></i>
             <p>Nenhuma ideia vinculada ainda. Seja o primeiro a participar!</p>
-            <a href="<?php echo htmlspecialchars($config['idea_form_url']); ?>" class="btn-u primary">
+            <a href="<?php echo htmlspecialchars($idea_form_campaign_url); ?>" class="btn-u primary">
               <i class="fa-solid fa-plus"></i> Enviar Primeira Ideia
             </a>
           </div>
