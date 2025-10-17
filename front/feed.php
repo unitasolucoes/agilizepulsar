@@ -119,7 +119,11 @@ $can_like = PluginAgilizepulsarConfig::canLike($user_profile);
   </div>
   <div class="camp-buttons">
     <a href="campaign.php?id=<?php echo $campaign['id']; ?>" class="btn-green"><i class="fa-solid fa-circle-info"></i> Detalhes</a>
-    <a href="<?php echo htmlspecialchars($idea_form_url); ?>" class="btn-outline"><i class="fa-solid fa-plus"></i> Participar</a>
+    <?php
+      $join_char = (strpos($idea_form_url, '?') === false) ? '?' : '&';
+      $participar_url = sprintf('%s%scampanha_id=%d', $idea_form_url, $join_char, $campaign['id']);
+    ?>
+    <a href="<?php echo htmlspecialchars($participar_url); ?>" class="btn-outline"><i class="fa-solid fa-plus"></i> Participar</a>
   </div>
 </article>
 <?php endforeach; ?>

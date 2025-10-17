@@ -69,6 +69,17 @@ if ($user->getFromDB(Session::getLoginUserID())) {
     }
 }
 
+$selectedCampaignId = 0;
+if (isset($_GET['campanha_id'])) {
+    $candidateId = (int) $_GET['campanha_id'];
+    foreach ($campanhas as $campanha) {
+        if ((int) $campanha['id'] === $candidateId) {
+            $selectedCampaignId = $candidateId;
+            break;
+        }
+    }
+}
+
 $title = sprintf(__('%s – Nova Ideia', 'agilizepulsar'), $menuName);
 if (Session::getCurrentInterface() === 'helpdesk') {
     Html::helpHeader($title, '', 'helpdesk', 'management');
@@ -84,7 +95,7 @@ $pluginWeb = Plugin::getWebDir('agilizepulsar');
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
 
 <?php
-plugin_agilizepulsar_render_ideia_form($campanhas, $areasPadrao, $csrf, $autorNome);
+plugin_agilizepulsar_render_ideia_form($campanhas, $areasPadrao, $csrf, $autorNome, $selectedCampaignId);
 ?>
 
 <script src="<?php echo $pluginWeb; ?>/js/ideia.form.js"></script>

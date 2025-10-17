@@ -7,12 +7,13 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Renderiza o formulário de nova ideia utilizando um layout inspirado no GLPI.
  *
- * @param array  $campanhas Lista de campanhas ativas.
- * @param array  $areas     Lista de áreas impactadas.
- * @param string $csrf      Token CSRF.
- * @param string $autorNome Nome formatado do autor autenticado.
+ * @param array  $campanhas          Lista de campanhas ativas.
+ * @param array  $areas              Lista de áreas impactadas.
+ * @param string $csrf               Token CSRF.
+ * @param string $autorNome          Nome formatado do autor autenticado.
+ * @param int    $selectedCampaignId ID de campanha pré-selecionada.
  */
-function plugin_agilizepulsar_render_ideia_form(array $campanhas, array $areas, string $csrf, string $autorNome): void {
+function plugin_agilizepulsar_render_ideia_form(array $campanhas, array $areas, string $csrf, string $autorNome, int $selectedCampaignId = 0): void {
     $pluginWeb = Plugin::getWebDir('agilizepulsar');
 
     ob_start();
@@ -37,13 +38,13 @@ function plugin_agilizepulsar_render_ideia_form(array $campanhas, array $areas, 
                         <div class="pulsar-field pulsar-field--full">
                             <label class="pulsar-label required" for="campanha_id"><?php echo __('Campanha vinculada', 'agilizepulsar'); ?></label>
                             <select id="campanha_id" name="campanha_id" class="form-select" required>
-                                <option value=""><?php echo __('Selecione uma campanha', 'agilizepulsar'); ?></option>
+                                <option value="" <?php echo $selectedCampaignId === 0 ? 'selected' : ''; ?>><?php echo __('Selecione uma campanha', 'agilizepulsar'); ?></option>
                                 <?php foreach ($campanhas as $campanha):
                                     $id = (int) $campanha['id'];
                                     $deadline = Html::entities_deep($campanha['time_to_resolve'] ?? '');
                                     $name = Html::entities_deep($campanha['name']);
                                     ?>
-                                    <option value="<?php echo $id; ?>" data-deadline="<?php echo $deadline; ?>"><?php echo $name; ?></option>
+                                    <option value="<?php echo $id; ?>" data-deadline="<?php echo $deadline; ?>" <?php echo $id === $selectedCampaignId ? 'selected' : ''; ?>><?php echo $name; ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <div id="campaign-preview" class="campaign-preview" style="display:none;"></div>
