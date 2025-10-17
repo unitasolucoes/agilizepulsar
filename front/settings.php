@@ -39,7 +39,7 @@ $formcreator_form_id_campaign = (int)($config['formcreator_form_id_campaign'] ??
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (method_exists('Session', 'checkCSRF')) {
-        Session::checkCSRF();
+        Session::checkCSRF($_POST);
     }
 
     $menu_name_post = trim($_POST['menu_name'] ?? '');

@@ -18,7 +18,7 @@ try {
     }
 
     if (method_exists('Session', 'checkCSRF')) {
-        Session::checkCSRF();
+        Session::checkCSRF($_POST);
     }
 
     $dados = [
