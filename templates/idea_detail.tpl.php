@@ -212,13 +212,6 @@ $author_initials = PluginAgilizepulsarConfig::getUserInitials(
         <?php else: ?>
           <p class="pulsar-muted">Sem campanha associada</p>
         <?php endif; ?>
-        <button class="btn-outline btn-small link-campaign-btn"
-                type="button"
-                data-ticket-id="<?php echo $tickets_id; ?>"
-                data-campaign-id="<?php echo isset($data['campaign_id']) && $data['campaign_id'] > 0 ? (int) $data['campaign_id'] : ''; ?>">
-          <i class="fa-solid fa-flag"></i>
-          <?php echo !empty($data['campaign_id']) ? 'Alterar Campanha' : 'Vincular à Campanha'; ?>
-        </button>
       </div>
 
       <div class="card-u sidebar-card">
@@ -271,7 +264,6 @@ console.log('🟢 APÓS CARREGAR pulsar.js');
 console.log('=================================');
 console.log('✅ PulsarLike existe?', typeof PulsarLike !== 'undefined' ? 'SIM' : 'NÃO');
 console.log('✅ PulsarComment existe?', typeof PulsarComment !== 'undefined' ? 'SIM' : 'NÃO');
-console.log('✅ PulsarCampaign existe?', typeof PulsarCampaign !== 'undefined' ? 'SIM' : 'NÃO');
 console.log('✅ getGLPICSRFToken existe?', typeof getGLPICSRFToken !== 'undefined' ? 'SIM' : 'NÃO');
 
 if (typeof PulsarLike === 'undefined') {
@@ -279,9 +271,6 @@ if (typeof PulsarLike === 'undefined') {
 }
 if (typeof PulsarComment === 'undefined') {
   console.error('❌ ERRO CRÍTICO: PulsarComment NÃO FOI CARREGADO!');
-}
-if (typeof PulsarCampaign === 'undefined') {
-  console.error('❌ ERRO CRÍTICO: PulsarCampaign NÃO FOI CARREGADO!');
 }
 </script>
 
@@ -293,30 +282,6 @@ if (typeof PulsarCampaign === 'undefined') {
   console.log('=================================');
   console.log('🟡 INICIALIZANDO EVENTOS');
   console.log('=================================');
-
-  // Sistema de Vincular Campanha
-  console.log('📌 Procurando botões .link-campaign-btn...');
-  const campaignButtons = document.querySelectorAll('.link-campaign-btn');
-  console.log('   Encontrados:', campaignButtons.length, 'botões');
-  
-  if (typeof PulsarCampaign !== 'undefined') {
-    campaignButtons.forEach(function(button) {
-      button.addEventListener('click', function(event) {
-        event.preventDefault();
-        console.log('🔵 Botão de campanha clicado!');
-
-        var ticketId = this.getAttribute('data-ticket-id');
-        var campaignId = this.getAttribute('data-campaign-id') || '';
-
-        console.log('   Ticket ID:', ticketId);
-        console.log('   Campaign ID:', campaignId);
-
-        PulsarCampaign.openModal(ticketId, campaignId);
-      });
-    });
-  } else {
-    console.error('❌ PulsarCampaign não definido - botões de campanha não funcionarão');
-  }
 
   // Sistema de Toggle de Comentários
   console.log('📌 Procurando botão #toggle-comments-btn...');

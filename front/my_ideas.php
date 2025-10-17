@@ -322,13 +322,6 @@ $can_like  = PluginAgilizepulsarConfig::canLike($user_profile);
             <a href="idea.php?id=<?php echo $ticket_id; ?>" class="btn-outline btn-small">
               <i class="fa-solid fa-arrow-right"></i> Ver detalhes
             </a>
-            <button class="btn-outline btn-small link-campaign-btn"
-                    type="button"
-                    data-ticket-id="<?php echo $ticket_id; ?>"
-                    data-campaign-id="<?php echo $campaign_id; ?>">
-              <i class="fa-solid fa-flag"></i>
-              <?php echo !empty($campaign_id) ? 'Alterar Campanha' : 'Vincular à Campanha'; ?>
-            </button>
           </div>
         </div>
       </article>
@@ -370,20 +363,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Vincular campanhas
-  if (typeof PulsarCampaign !== 'undefined') {
-    document.querySelectorAll('.link-campaign-btn').forEach(function(btn) {
-      btn.addEventListener('click', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const ticketId = this.getAttribute('data-ticket-id');
-        const campaignId = this.getAttribute('data-campaign-id') || '';
-
-        PulsarCampaign.openModal(ticketId, campaignId);
-      });
-    });
-  }
 });
 </script>
 

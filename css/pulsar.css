@@ -1404,10 +1404,6 @@ a:hover {
   color: var(--u-text-muted);
 }
 
-.link-campaign-btn {
-  gap: 6px;
-}
-
 .btn-u.full-width {
   width: 100%;
   justify-content: center;
