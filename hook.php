@@ -2,7 +2,10 @@
 
 function plugin_agilizepulsar_install() {
     global $DB;
-    
+
+    $native_form_url = Plugin::getWebDir('agilizepulsar') . '/front/nova_ideia.php';
+    $escaped_native_form_url = $DB->escape($native_form_url);
+
     // 1. Tabela de configuração
     if (!$DB->tableExists('glpi_plugin_agilizepulsar_configs')) {
         $query = "CREATE TABLE `glpi_plugin_agilizepulsar_configs` (
@@ -10,20 +13,20 @@ function plugin_agilizepulsar_install() {
             `menu_name` varchar(255) DEFAULT 'Pulsar',
             `campaign_category_id` int unsigned DEFAULT 152,
             `idea_category_id` int unsigned DEFAULT 153,
-            `idea_form_url` varchar(255) DEFAULT '/marketplace/formcreator/front/formdisplay.php?id=121',
+            `idea_form_url` varchar(255) DEFAULT '{$escaped_native_form_url}',
             `view_profile_ids` text,
             `like_profile_ids` text,
             `admin_profile_ids` text,
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-        
+
         $DB->queryOrDie($query, $DB->error());
-        
+
         $DB->insertOrDie('glpi_plugin_agilizepulsar_configs', [
             'menu_name'             => 'Pulsar',
             'campaign_category_id'  => 152,
             'idea_category_id'      => 153,
-            'idea_form_url'         => '/marketplace/formcreator/front/formdisplay.php?id=121',
+            'idea_form_url'         => $native_form_url,
             'view_profile_ids'      => json_encode([]),
             'like_profile_ids'      => json_encode([]),
             'admin_profile_ids'     => json_encode([])
@@ -33,12 +36,18 @@ function plugin_agilizepulsar_install() {
     // Verificar se existe o campo idea_form_url
     if ($DB->tableExists('glpi_plugin_agilizepulsar_configs')) {
         if (!$DB->fieldExists('glpi_plugin_agilizepulsar_configs', 'idea_form_url')) {
-            $DB->queryOrDie("ALTER TABLE `glpi_plugin_agilizepulsar_configs` ADD `idea_form_url` varchar(255) DEFAULT '/marketplace/formcreator/front/formdisplay.php?id=121'", $DB->error());
-            
+            $DB->queryOrDie("ALTER TABLE `glpi_plugin_agilizepulsar_configs` ADD `idea_form_url` varchar(255) DEFAULT '{$escaped_native_form_url}'", $DB->error());
+
             $DB->updateOrDie(
                 'glpi_plugin_agilizepulsar_configs',
-                ['idea_form_url' => '/marketplace/formcreator/front/formdisplay.php?id=121'],
+                ['idea_form_url' => $native_form_url],
                 []
+            );
+        } else {
+            $DB->update(
+                'glpi_plugin_agilizepulsar_configs',
+                ['idea_form_url' => $native_form_url],
+                ['idea_form_url' => '/marketplace/formcreator/front/formdisplay.php?id=121']
             );
         }
     }
