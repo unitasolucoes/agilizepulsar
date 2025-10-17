@@ -34,16 +34,21 @@ $admin_profiles = json_decode($config['admin_profile_ids'] ?? '[]', true) ?: [];
 
 $campaign_category_id = (int)$config['campaign_category_id'];
 $idea_category_id     = (int)$config['idea_category_id'];
+$formcreator_form_id_idea = (int)($config['formcreator_form_id_idea'] ?? 0);
+$formcreator_form_id_campaign = (int)($config['formcreator_form_id_campaign'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (method_exists('Session', 'checkCSRF')) {
-        Session::checkCSRF();
+        Session::checkCSRF($_POST);
     }
 
     $menu_name_post = trim($_POST['menu_name'] ?? '');
     $campaign_post  = (int)($_POST['campaign_category_id'] ?? 0);
     $idea_post      = (int)($_POST['idea_category_id'] ?? 0);
-    $idea_form_post = trim($_POST['idea_form_url'] ?? '');
+$idea_form_post = trim($_POST['idea_form_url'] ?? '');
+$native_idea_form_url = PluginAgilizepulsarConfig::getIdeaFormUrl();
+    $formcreator_idea_post = (int)($_POST['formcreator_form_id_idea'] ?? 0);
+    $formcreator_campaign_post = (int)($_POST['formcreator_form_id_campaign'] ?? 0);
     $view_post      = isset($_POST['view_profile_ids']) ? array_map('intval', (array)$_POST['view_profile_ids']) : [];
     $like_post      = isset($_POST['like_profile_ids']) ? array_map('intval', (array)$_POST['like_profile_ids']) : [];
     $admin_post     = isset($_POST['admin_profile_ids']) ? array_map('intval', (array)$_POST['admin_profile_ids']) : [];
@@ -52,7 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'menu_name'            => $menu_name_post !== '' ? $menu_name_post : 'Pulsar',
         'campaign_category_id' => $campaign_post ?: $campaign_category_id,
         'idea_category_id'     => $idea_post ?: $idea_category_id,
-        'idea_form_url'        => $idea_form_post !== '' ? $idea_form_post : ($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'),
+        'idea_form_url'        => $idea_form_post !== '' ? $idea_form_post : $native_idea_form_url,
+        'formcreator_form_id_idea'     => max(0, $formcreator_idea_post),
+        'formcreator_form_id_campaign' => max(0, $formcreator_campaign_post),
         'view_profile_ids'     => json_encode(array_values(array_unique($view_post))),
         'like_profile_ids'     => json_encode(array_values(array_unique($like_post))),
         'admin_profile_ids'    => json_encode(array_values(array_unique($admin_post)))
@@ -183,7 +190,7 @@ $csrf_token = Session::getNewCSRFToken();
         </div>
         <div class="form-group">
           <label for="idea_form_url">URL do formulário de ideias</label>
-          <input type="url" id="idea_form_url" name="idea_form_url" value="<?php echo htmlspecialchars($config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121'); ?>" required>
+          <input type="url" id="idea_form_url" name="idea_form_url" value="<?php echo htmlspecialchars($native_idea_form_url); ?>" required>
           <small class="pulsar-muted">Defina o endereço do formulário FormCreator utilizado para registrar novas ideias.</small>
         </div>
       </div>
@@ -225,6 +232,27 @@ $csrf_token = Session::getNewCSRFToken();
           </select>
           <small class="pulsar-muted">Administradores têm acesso às configurações.</small>
         </div>
+      </div>
+    </section>
+
+    <section class="card-u">
+      <h2><i class="fa-solid fa-arrows-turn-right"></i> <?php echo __('Redirecionamento de formulários', 'agilizepulsar'); ?></h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="formcreator_form_id_idea">ID do Formulário de Ideia (FormCreator)</label>
+          <input type="number" id="formcreator_form_id_idea" name="formcreator_form_id_idea" min="0" value="<?php echo (int)$formcreator_form_id_idea; ?>">
+          <small class="pulsar-muted"><?php echo __('Defina o ID do formulário do FormCreator que deve ser redirecionado para o formulário nativo de ideias. Use 0 para desabilitar.', 'agilizepulsar'); ?></small>
+        </div>
+        <div class="form-group">
+          <label for="formcreator_form_id_campaign">ID do Formulário de Campanha (FormCreator)</label>
+          <input type="number" id="formcreator_form_id_campaign" name="formcreator_form_id_campaign" min="0" value="<?php echo (int)$formcreator_form_id_campaign; ?>">
+          <small class="pulsar-muted"><?php echo __('Defina o ID do formulário do FormCreator que deve ser redirecionado para o formulário nativo de campanhas. Use 0 para desabilitar.', 'agilizepulsar'); ?></small>
+        </div>
+      </div>
+      <div class="info-box">
+        <strong><?php echo __('Como descobrir o ID?', 'agilizepulsar'); ?></strong>
+        <p class="pulsar-muted"><?php echo __('Acesse Assistência &gt; Formulários, abra o formulário desejado e confira o parâmetro <code>id</code> na URL.', 'agilizepulsar'); ?></p>
+        <code>front/form.form.php?id=<strong>62</strong></code>
       </div>
     </section>
 

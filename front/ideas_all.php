@@ -12,7 +12,7 @@ if (!PluginAgilizepulsarConfig::canView($user_profile)) {
 
 $config = PluginAgilizepulsarConfig::getConfig();
 $menu_name = $config['menu_name'];
-$idea_form_url = $config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121';
+$idea_form_url = PluginAgilizepulsarConfig::getIdeaFormUrl();
 $plugin_web = Plugin::getWebDir('agilizepulsar');
 $csrf_token = Session::getNewCSRFToken();
 
