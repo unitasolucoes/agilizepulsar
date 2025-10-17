@@ -10,45 +10,194 @@ class PluginAgilizepulsarIdeaCampaign {
         return 'glpi_plugin_agilizepulsar_idea_campaigns';
     }
 
-    public static function linkIdeaToCampaign(int $idea_id, int $campaign_id, int $users_id = 0): bool {
+    public static function linkIdeaToCampaign(int $idea_id, int $campaign_id, int $user_id): bool {
+        global $DB;
+
+        if ($idea_id <= 0 || $campaign_id <= 0 || $user_id <= 0) {
+            return false;
+        }
+
+        if (!PluginAgilizepulsarTicket::isIdea($idea_id)) {
+            return false;
+        }
+
+        if (!PluginAgilizepulsarTicket::isCampaign($campaign_id)) {
+            return false;
+        }
+
+        if (self::isIdeaLinkedToCampaign($idea_id, $campaign_id)) {
+            return true;
+        }
+
+        $data = [
+            'idea_id'    => $idea_id,
+            'campaign_id'=> $campaign_id,
+            'linked_by'  => $user_id,
+            'linked_at'  => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s')
+        ];
+
+        $result = $DB->insert(self::getTable(), $data);
+
+        if ($result && class_exists('PluginAgilizepulsarLog')) {
+            PluginAgilizepulsarLog::add('idea_campaign_linked', $user_id, $data);
+        }
+
+        return (bool) $result;
+    }
+
+    public static function unlinkIdeaFromCampaign(int $idea_id, int $campaign_id, int $user_id): bool {
         global $DB;
 
         if ($idea_id <= 0 || $campaign_id <= 0) {
             return false;
         }
 
-        $existing = self::getRawLinkForIdea($idea_id);
+        $deleted = $DB->delete(self::getTable(), [
+            'idea_id'    => $idea_id,
+            'campaign_id'=> $campaign_id
+        ]);
 
-        $data = [
-            'ideas_id'      => $idea_id,
-            'campaigns_id'  => $campaign_id,
-            'users_id'      => $users_id > 0 ? $users_id : null,
-            'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s')
-        ];
-
-        if (!empty($existing)) {
-            return (bool) $DB->update(
-                self::getTable(),
-                [
-                    'campaigns_id'  => $data['campaigns_id'],
-                    'users_id'      => $data['users_id'],
-                    'date_creation' => $data['date_creation']
-                ],
-                ['id' => (int) $existing['id']]
-            );
+        if ($deleted && class_exists('PluginAgilizepulsarLog')) {
+            PluginAgilizepulsarLog::add('idea_campaign_unlinked', $user_id, [
+                'idea_id'     => $idea_id,
+                'campaign_id' => $campaign_id
+            ]);
         }
 
-        return (bool) $DB->insert(self::getTable(), $data);
+        return (bool) $deleted;
     }
 
-    public static function unlinkIdea(int $idea_id): bool {
+    public static function getIdeaCampaigns(int $idea_id): array {
         global $DB;
 
         if ($idea_id <= 0) {
+            return [];
+        }
+
+        $iterator = $DB->request([
+            'SELECT' => [
+                'ic.campaign_id',
+                'ic.linked_at',
+                'ic.linked_by',
+                't.name AS campaign_name',
+                't.time_to_resolve'
+            ],
+            'FROM' => self::getTable() . ' AS ic',
+            'LEFT JOIN' => [
+                'glpi_tickets AS t' => [
+                    'FKEY' => [
+                        't' => 'id',
+                        'ic' => 'campaign_id'
+                    ]
+                ]
+            ],
+            'WHERE' => ['ic.idea_id' => $idea_id]
+        ]);
+
+        $results = [];
+        foreach ($iterator as $row) {
+            $row['time_to_resolve'] = $row['time_to_resolve'] ? Html::convDateTime($row['time_to_resolve']) : null;
+            $results[] = $row;
+        }
+
+        return $results;
+    }
+
+    public static function getCampaignIdeas(int $campaign_id): array {
+        global $DB;
+
+        if ($campaign_id <= 0) {
+            return [];
+        }
+
+        $iterator = $DB->request([
+            'SELECT' => [
+                'ic.idea_id',
+                'ic.linked_at',
+                'ic.linked_by',
+                't.name AS idea_name',
+                't.status'
+            ],
+            'FROM' => self::getTable() . ' AS ic',
+            'LEFT JOIN' => [
+                'glpi_tickets AS t' => [
+                    'FKEY' => [
+                        't' => 'id',
+                        'ic' => 'idea_id'
+                    ]
+                ]
+            ],
+            'WHERE' => ['ic.campaign_id' => $campaign_id]
+        ]);
+
+        $results = [];
+        foreach ($iterator as $row) {
+            $results[] = $row;
+        }
+
+        return $results;
+    }
+
+    public static function isIdeaLinkedToCampaign(int $idea_id, int $campaign_id): bool {
+        global $DB;
+
+        if ($idea_id <= 0 || $campaign_id <= 0) {
             return false;
         }
 
-        return (bool) $DB->delete(self::getTable(), ['ideas_id' => $idea_id]);
+        $iterator = $DB->request([
+            'SELECT' => 'id',
+            'FROM'   => self::getTable(),
+            'WHERE'  => [
+                'idea_id'    => $idea_id,
+                'campaign_id'=> $campaign_id
+            ],
+            'LIMIT'  => 1
+        ]);
+
+        return count($iterator) > 0;
+    }
+
+    public static function countIdeaCampaigns(int $idea_id): int {
+        global $DB;
+
+        if ($idea_id <= 0) {
+            return 0;
+        }
+
+        $iterator = $DB->request([
+            'SELECT' => 'id',
+            'FROM'   => self::getTable(),
+            'WHERE'  => ['idea_id' => $idea_id]
+        ]);
+
+        $total = 0;
+        foreach ($iterator as $_row) {
+            $total++;
+        }
+
+        return $total;
+    }
+
+    public static function countCampaignIdeas(int $campaign_id): int {
+        global $DB;
+
+        if ($campaign_id <= 0) {
+            return 0;
+        }
+
+        $iterator = $DB->request([
+            'SELECT' => 'id',
+            'FROM'   => self::getTable(),
+            'WHERE'  => ['campaign_id' => $campaign_id]
+        ]);
+
+        $total = 0;
+        foreach ($iterator as $_row) {
+            $total++;
+        }
+
+        return $total;
     }
 
     public static function getLinkForIdea(int $idea_id): array {
@@ -59,25 +208,27 @@ class PluginAgilizepulsarIdeaCampaign {
         }
 
         $iterator = $DB->request([
-            'SELECT'   => [
-                'link_id'          => 'ic.id',
-                'campaign_id'      => 'ic.campaigns_id',
-                'linked_at'        => 'ic.date_creation',
-                'linked_by'        => 'ic.users_id',
-                'campaign_name'    => 'campaign.name',
-                'campaign_deadline'=> 'campaign.time_to_resolve'
+            'SELECT' => [
+                'ic.id AS link_id',
+                'ic.idea_id',
+                'ic.campaign_id',
+                'ic.linked_at',
+                'ic.linked_by',
+                'campaign.name AS campaign_name',
+                'campaign.time_to_resolve'
             ],
-            'FROM'     => self::getTable() . ' AS ic',
-            'LEFT JOIN'=> [
+            'FROM' => self::getTable() . ' AS ic',
+            'LEFT JOIN' => [
                 'glpi_tickets AS campaign' => [
                     'FKEY' => [
                         'campaign' => 'id',
-                        'ic'       => 'campaigns_id'
+                        'ic'       => 'campaign_id'
                     ]
                 ]
             ],
-            'WHERE'    => ['ic.ideas_id' => $idea_id],
-            'LIMIT'    => 1
+            'WHERE' => ['ic.idea_id' => $idea_id],
+            'ORDER' => 'ic.linked_at DESC',
+            'LIMIT' => 1
         ]);
 
         if (count($iterator) === 0) {
@@ -85,56 +236,9 @@ class PluginAgilizepulsarIdeaCampaign {
         }
 
         $row = $iterator->current();
+        $row['campaign_deadline'] = $row['time_to_resolve'] ? Html::convDateTime($row['time_to_resolve']) : null;
+        unset($row['time_to_resolve']);
 
-        return [
-            'link_id'           => (int) ($row['link_id'] ?? 0),
-            'campaign_id'       => (int) ($row['campaign_id'] ?? 0),
-            'campaign_name'     => $row['campaign_name'] ?? null,
-            'campaign_deadline' => $row['campaign_deadline'] ?? null,
-            'linked_at'         => $row['linked_at'] ?? null,
-            'linked_by'         => (int) ($row['linked_by'] ?? 0)
-        ];
-    }
-
-    public static function getIdeasIdsByCampaign(int $campaign_id): array {
-        global $DB;
-
-        if ($campaign_id <= 0) {
-            return [];
-        }
-
-        $iterator = $DB->request([
-            'SELECT' => 'ideas_id',
-            'FROM'   => self::getTable(),
-            'WHERE'  => ['campaigns_id' => $campaign_id]
-        ]);
-
-        $ideas = [];
-        foreach ($iterator as $row) {
-            $ideas[] = (int) $row['ideas_id'];
-        }
-
-        return $ideas;
-    }
-
-    private static function getRawLinkForIdea(int $idea_id): array {
-        global $DB;
-
-        if ($idea_id <= 0) {
-            return [];
-        }
-
-        $iterator = $DB->request([
-            'SELECT' => '*',
-            'FROM'   => self::getTable(),
-            'WHERE'  => ['ideas_id' => $idea_id],
-            'LIMIT'  => 1
-        ]);
-
-        if (count($iterator) === 0) {
-            return [];
-        }
-
-        return $iterator->current();
+        return $row;
     }
 }
