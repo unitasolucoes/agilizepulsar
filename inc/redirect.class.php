@@ -7,6 +7,10 @@ if (!defined('GLPI_ROOT')) {
 class PluginAgilizepulsarRedirect {
 
     public static function maybeRedirect($params = []): void {
+        if (!self::isFormcreatorContext()) {
+            return;
+        }
+
         $formId = self::detectRequestedFormId($params);
         if ($formId <= 0) {
             return;
@@ -62,5 +66,23 @@ class PluginAgilizepulsarRedirect {
             'idea'     => PluginAgilizepulsarConfig::getFormCreatorIdeaFormId(),
             'campaign' => PluginAgilizepulsarConfig::getFormCreatorCampaignFormId()
         ];
+    }
+
+    private static function isFormcreatorContext(): bool {
+        if (!isset($_SERVER['SCRIPT_NAME'])) {
+            return false;
+        }
+
+        $script = $_SERVER['SCRIPT_NAME'];
+
+        if (strpos($script, '/formcreator/front/') !== false) {
+            return true;
+        }
+
+        if (strpos($script, '/marketplace/formcreator/front/') !== false) {
+            return true;
+        }
+
+        return false;
     }
 }
