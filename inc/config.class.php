@@ -49,7 +49,7 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
             'menu_name'                    => 'Pulsar',
             'campaign_category_id'         => 152,
             'idea_category_id'             => 153,
-            'idea_form_url'                => '/marketplace/formcreator/front/formdisplay.php?id=121',
+            'idea_form_url'                => Plugin::getWebDir('agilizepulsar') . '/front/nova_ideia.php',
             'view_profile_ids'             => json_encode([]),
             'like_profile_ids'             => json_encode([]),
             'admin_profile_ids'            => json_encode([]),
@@ -131,6 +131,22 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
         if (isset($GLPI_CACHE)) {
             $GLPI_CACHE->delete(self::CACHE_KEY);
         }
+    }
+
+    public static function getIdeaFormUrl(): string {
+        $config    = self::getConfig();
+        $configured = trim($config['idea_form_url'] ?? '');
+        $native    = Plugin::getWebDir('agilizepulsar') . '/front/nova_ideia.php';
+
+        if ($configured === '' || strpos($configured, '/formcreator/front/') !== false) {
+            return $native;
+        }
+
+        return $configured;
+    }
+
+    public static function getCampaignFormUrl(): string {
+        return Plugin::getWebDir('agilizepulsar') . '/front/nova_campanha.php';
     }
 
     /**
