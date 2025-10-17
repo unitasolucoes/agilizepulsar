@@ -57,7 +57,7 @@
     const updatePreview = () => {
       const option = select.options[select.selectedIndex];
       if (!option || !option.dataset.deadline) {
-        preview.classList.add('is-hidden');
+        preview.style.display = 'none';
         preview.innerHTML = '';
         return;
       }
@@ -67,7 +67,7 @@
         <h3>${option.textContent}</h3>
         <p><strong>Prazo estimado:</strong> ${deadline ?? 'Não definido'}</p>
       `;
-      preview.classList.remove('is-hidden');
+      preview.style.display = 'block';
     };
 
     select.addEventListener('change', updatePreview);

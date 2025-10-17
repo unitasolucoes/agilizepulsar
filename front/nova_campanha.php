@@ -56,19 +56,15 @@ if (Session::getCurrentInterface() === 'helpdesk') {
 }
 
 $csrf = Session::getNewCSRFToken();
-$pluginWeb = Plugin::getWebDir('agilizepulsar');
-
 ?>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-wxM6d1YjIxtBlsYxJ3aXHCMGN28AL/fOHnqd7qV3CyMfCVxYvBy06SnVAk0nnBYnCTsRmRykGGBqBP1ZiZ8Ykg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-<link rel="stylesheet" href="<?php echo $pluginWeb; ?>/css/pulsar.css" />
-<link rel="stylesheet" href="<?php echo $pluginWeb; ?>/css/forms.css" />
 
 <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <?php
-plugin_agilizepulsar_render_campanha_form($campanhas, $areasPadrao, $csrf);
+$pluginWeb = Plugin::getWebDir('agilizepulsar');
+plugin_agilizepulsar_render_campanha_form($areasPadrao, $campanhas, $csrf);
 ?>
 
 <script src="<?php echo $pluginWeb; ?>/js/campanha.form.js"></script>
