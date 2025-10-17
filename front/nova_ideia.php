@@ -82,7 +82,8 @@ $csrf = Session::getNewCSRFToken();
 $pluginWeb = Plugin::getWebDir('agilizepulsar');
 
 ?>
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<link rel="stylesheet" href="<?php echo $pluginWeb; ?>/css/forms.css">
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
 
 <?php
 plugin_agilizepulsar_render_ideia_form($campanhas, $areasPadrao, $colaboradores, $csrf);

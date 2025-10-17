@@ -56,18 +56,27 @@ if (Session::getCurrentInterface() === 'helpdesk') {
 }
 
 $csrf = Session::getNewCSRFToken();
-?>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+$pluginWeb = Plugin::getWebDir('agilizepulsar');
 
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+?>
+<link rel="stylesheet" href="<?php echo $pluginWeb; ?>/css/forms.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/pt.js"></script>
 
 <?php
-$pluginWeb = Plugin::getWebDir('agilizepulsar');
 plugin_agilizepulsar_render_campanha_form($areasPadrao, $campanhas, $csrf);
 ?>
 
 <script src="<?php echo $pluginWeb; ?>/js/campanha.form.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof flatpickr !== 'undefined' && flatpickr.l10ns && flatpickr.l10ns.pt) {
+      flatpickr.localize(flatpickr.l10ns.pt);
+    }
+  });
+</script>
 <?php
 if (Session::getCurrentInterface() === 'helpdesk') {
     Html::helpFooter();
