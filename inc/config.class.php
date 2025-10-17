@@ -7,8 +7,17 @@ if (!defined('GLPI_ROOT')) {
 class PluginAgilizepulsarConfig extends CommonDBTM {
     static $rightname = 'config';
 
+    private const CACHE_KEY = 'plugin_agilizepulsar_config';
+
     public static function getConfig() {
-        global $DB;
+        global $DB, $GLPI_CACHE;
+
+        if (isset($GLPI_CACHE)) {
+            $cached = $GLPI_CACHE->get(self::CACHE_KEY);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
 
         $iterator = $DB->request([
             'FROM'  => self::getTable(),
@@ -16,30 +25,62 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
         ]);
 
         if (count($iterator) > 0) {
-            return $iterator->current();
+            $config = $iterator->current();
+        } else {
+            $config = self::getDefaultConfig();
         }
 
+        if (!isset($config['formcreator_form_id_idea'])) {
+            $config['formcreator_form_id_idea'] = 0;
+        }
+        if (!isset($config['formcreator_form_id_campaign'])) {
+            $config['formcreator_form_id_campaign'] = 0;
+        }
+
+        if (isset($GLPI_CACHE)) {
+            $GLPI_CACHE->set(self::CACHE_KEY, $config);
+        }
+
+        return $config;
+    }
+
+    private static function getDefaultConfig(): array {
         return [
-            'menu_name'            => 'Pulsar',
-            'campaign_category_id' => 152,
-            'idea_category_id'     => 153,
-            'idea_form_url'        => '/marketplace/formcreator/front/formdisplay.php?id=121',
-            'view_profile_ids'     => json_encode([]),
-            'like_profile_ids'     => json_encode([]),
-            'admin_profile_ids'    => json_encode([])
+            'menu_name'                    => 'Pulsar',
+            'campaign_category_id'         => 152,
+            'idea_category_id'             => 153,
+            'idea_form_url'                => Plugin::getWebDir('agilizepulsar') . '/front/nova_ideia.php',
+            'view_profile_ids'             => json_encode([]),
+            'like_profile_ids'             => json_encode([]),
+            'admin_profile_ids'            => json_encode([]),
+            'formcreator_form_id_idea'     => 0,
+            'formcreator_form_id_campaign' => 0
         ];
     }
 
     public static function updateConfig($data) {
         $config = new self();
         $existing = self::getConfig();
+        $payload = array_merge($existing, $data);
 
         if (isset($existing['id'])) {
-            $data['id'] = $existing['id'];
-            return $config->update($data);
+            $payload['id'] = $existing['id'];
+            $result = $config->update($payload);
+        } else {
+            $result = $config->add($payload);
         }
 
-        return $config->add($data);
+        if ($result) {
+            self::clearCache();
+        }
+
+        return $result;
+    }
+
+    public static function saveSetting(string $setting, $value): bool {
+        $current = self::getConfig();
+        $current[$setting] = $value;
+        return (bool) self::updateConfig($current);
     }
 
     public static function canView($user_profile_id = null) {
@@ -65,6 +106,47 @@ class PluginAgilizepulsarConfig extends CommonDBTM {
         $allowed = json_decode($config['admin_profile_ids'] ?? '[]', true) ?: [];
 
         return empty($allowed) || in_array($user_profile_id, $allowed);
+    }
+
+    public static function setFormCreatorIdeaFormId(int $form_id): bool {
+        return self::saveSetting('formcreator_form_id_idea', max(0, $form_id));
+    }
+
+    public static function setFormCreatorCampaignFormId(int $form_id): bool {
+        return self::saveSetting('formcreator_form_id_campaign', max(0, $form_id));
+    }
+
+    public static function getFormCreatorIdeaFormId(): int {
+        $config = self::getConfig();
+        return (int) ($config['formcreator_form_id_idea'] ?? 0);
+    }
+
+    public static function getFormCreatorCampaignFormId(): int {
+        $config = self::getConfig();
+        return (int) ($config['formcreator_form_id_campaign'] ?? 0);
+    }
+
+    public static function clearCache(): void {
+        global $GLPI_CACHE;
+        if (isset($GLPI_CACHE)) {
+            $GLPI_CACHE->delete(self::CACHE_KEY);
+        }
+    }
+
+    public static function getIdeaFormUrl(): string {
+        $config    = self::getConfig();
+        $configured = trim($config['idea_form_url'] ?? '');
+        $native    = Plugin::getWebDir('agilizepulsar') . '/front/nova_ideia.php';
+
+        if ($configured === '' || strpos($configured, '/formcreator/front/') !== false) {
+            return $native;
+        }
+
+        return $configured;
+    }
+
+    public static function getCampaignFormUrl(): string {
+        return Plugin::getWebDir('agilizepulsar') . '/front/nova_campanha.php';
     }
 
     /**
