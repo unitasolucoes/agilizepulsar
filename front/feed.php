@@ -12,8 +12,8 @@ if (!PluginAgilizepulsarConfig::canView($user_profile)) {
 
 $config = PluginAgilizepulsarConfig::getConfig();
 $menu_name = $config['menu_name'];
-$idea_form_url = $config['idea_form_url'] ?? '/marketplace/formcreator/front/formdisplay.php?id=121';
-$campaign_form_url = '/marketplace/formcreator/front/formdisplay.php?id=122'; // ✅ NOVO
+$idea_form_url = PluginAgilizepulsarConfig::getIdeaFormUrl();
+$campaign_form_url = PluginAgilizepulsarConfig::getCampaignFormUrl();
 $plugin_web = Plugin::getWebDir('agilizepulsar');
 
 $title = sprintf(__('%s – Feed', 'agilizepulsar'), $menu_name);

@@ -1,0 +1,246 @@
+:root {
+  --u-primary: #00995d;
+  --u-primary-hover: #007a4a;
+  --u-dark: #2c3e50;
+  --u-text-muted: #6c757d;
+  --u-border: #dee2e6;
+  --u-soft: #f8f9fa;
+  --u-danger: #dc3545;
+}
+
+.pulsar-form {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section-header {
+  background: #f8f9fa;
+  border-bottom: 2px solid var(--u-primary);
+  padding: 16px 20px;
+  border-radius: 12px 12px 0 0;
+}
+
+.form-section-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--u-dark);
+}
+
+.card-u.form-section-body {
+  border-radius: 0 0 12px 12px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--u-dark);
+  font-size: 14px;
+}
+
+.form-label.required::after {
+  content: " *";
+  color: var(--u-danger);
+}
+
+.form-help {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--u-text-muted);
+  line-height: 1.5;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--u-border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--u-primary);
+  box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.12);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.form-radio-group,
+.form-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-radio,
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.form-radio input,
+.form-checkbox input {
+  accent-color: var(--u-primary);
+}
+
+.form-radio:hover,
+.form-checkbox:hover {
+  background: var(--u-soft);
+}
+
+.info-box {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f0f9f4;
+  border: 1px solid #b7e4c7;
+  border-radius: 8px;
+}
+
+.file-upload-area {
+  border: 2px dashed var(--u-border);
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  background: var(--u-soft);
+  transition: all 0.2s ease;
+}
+
+.file-upload-area:hover {
+  border-color: var(--u-primary);
+  background: rgba(0, 153, 93, 0.05);
+}
+
+.form-control-file {
+  display: none;
+}
+
+.btn-file-upload {
+  display: inline-block;
+  padding: 10px 20px;
+  background: var(--u-primary);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-file-upload:hover {
+  background: var(--u-primary-hover);
+  transform: translateY(-1px);
+}
+
+.file-upload-list {
+  margin-top: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.file-upload-list li {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--u-dark);
+  border-bottom: 1px solid var(--u-border);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--u-border);
+}
+
+.form-actions .btn-u {
+  min-width: 180px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions .btn-u {
+    width: 100%;
+  }
+}
+
+.campaign-preview {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--u-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.campaign-preview h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--u-dark);
+}
+
+.campaign-preview p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--u-text-muted);
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.checkbox-grid,
+.multiselect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.flatpickr-input {
+  background-color: #fff;
+}
+
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  animation: pulsar-spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+@keyframes pulsar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
