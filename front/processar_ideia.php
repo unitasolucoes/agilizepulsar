@@ -30,8 +30,7 @@ try {
         'implementacao'        => trim($_POST['implementacao'] ?? ''),
         'ideia_existente'      => trim($_POST['ideia_existente'] ?? ''),
         'objetivo_estrategico' => trim($_POST['objetivo_estrategico'] ?? ''),
-        'classificacao'        => trim($_POST['classificacao'] ?? ''),
-        'autor_id'             => (int) ($_POST['autor_id'] ?? 0)
+        'classificacao'        => trim($_POST['classificacao'] ?? '')
     ];
 
     $resultado = PluginAgilizepulsarIdeiaCreator::createIdeiaTicket($dados, $_FILES['anexos'] ?? []);

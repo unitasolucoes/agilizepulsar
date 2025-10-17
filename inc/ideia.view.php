@@ -5,173 +5,148 @@ if (!defined('GLPI_ROOT')) {
 }
 
 /**
- * Renderiza o formulário de nova ideia utilizando a estrutura padrão do GLPI.
+ * Renderiza o formulário de nova ideia utilizando um layout inspirado no GLPI.
  *
- * @param array  $campanhas      Lista de campanhas ativas.
- * @param array  $areas          Lista de áreas impactadas.
- * @param array  $colaboradores  Lista de colaboradores disponíveis.
- * @param string $csrf           Token CSRF.
+ * @param array  $campanhas Lista de campanhas ativas.
+ * @param array  $areas     Lista de áreas impactadas.
+ * @param string $csrf      Token CSRF.
+ * @param string $autorNome Nome formatado do autor autenticado.
  */
-function plugin_agilizepulsar_render_ideia_form(array $campanhas, array $areas, array $colaboradores, string $csrf): void {
+function plugin_agilizepulsar_render_ideia_form(array $campanhas, array $areas, string $csrf, string $autorNome): void {
     $pluginWeb = Plugin::getWebDir('agilizepulsar');
 
-    echo "<div class='pulsar-form'>";
-    echo "<form id='form-nova-ideia' method='post' action='{$pluginWeb}/front/processar_ideia.php' enctype='multipart/form-data'>";
-    echo "<input type='hidden' name='_glpi_csrf_token' value='" . Html::entities_deep($csrf) . "'>";
+    ob_start();
+    ?>
+    <div class="pulsar-form">
+        <form id="form-nova-ideia" method="post" action="<?php echo $pluginWeb; ?>/front/processar_ideia.php" enctype="multipart/form-data">
+            <input type="hidden" name="_glpi_csrf_token" value="<?php echo Html::entities_deep($csrf); ?>">
 
-    echo "<table class='tab_cadre_fixe'>";
-    echo "  <tr class='tab_bg_2'>";
-    echo "    <th colspan='4'>" . __('Identificação da Ideia', 'agilizepulsar') . "</th>";
-    echo "  </tr>";
+            <section class="pulsar-card">
+                <div class="pulsar-card__header">
+                    <h2><?php echo __('Identificação da ideia', 'agilizepulsar'); ?></h2>
+                    <p class="pulsar-card__subtitle"><?php echo __('Conte em poucas palavras qual é a proposta e onde ela se encaixa.', 'agilizepulsar'); ?></p>
+                </div>
+                <div class="pulsar-card__body">
+                    <div class="pulsar-grid">
+                        <div class="pulsar-field pulsar-field--full">
+                            <label class="pulsar-label required" for="titulo"><?php echo __('Título da ideia', 'agilizepulsar'); ?></label>
+                            <input type="text" id="titulo" name="titulo" class="form-control" maxlength="255" required>
+                            <span class="pulsar-note"><?php echo __('Escolha um nome curto e objetivo. Esse será o título do ticket.', 'agilizepulsar'); ?></span>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right' style='width: 220px;'>";
-    echo "      <label for='titulo'>" . __('Título da ideia', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <input type='text' id='titulo' name='titulo' class='form-control' maxlength='255' required>";
-    echo "      <div class='section-help'>" . __('Dê um nome memorável para sua ideia.', 'agilizepulsar') . "</div>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field pulsar-field--full">
+                            <label class="pulsar-label required" for="campanha_id"><?php echo __('Campanha vinculada', 'agilizepulsar'); ?></label>
+                            <select id="campanha_id" name="campanha_id" class="form-select" required>
+                                <option value=""><?php echo __('Selecione uma campanha', 'agilizepulsar'); ?></option>
+                                <?php foreach ($campanhas as $campanha):
+                                    $id = (int) $campanha['id'];
+                                    $deadline = Html::entities_deep($campanha['time_to_resolve'] ?? '');
+                                    $name = Html::entities_deep($campanha['name']);
+                                    ?>
+                                    <option value="<?php echo $id; ?>" data-deadline="<?php echo $deadline; ?>"><?php echo $name; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div id="campaign-preview" class="campaign-preview" style="display:none;"></div>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='campanha_id'>" . __('Campanha vinculada', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <select id='campanha_id' name='campanha_id' class='form-select' required>";
-    echo "        <option value=''>" . __('Selecione uma campanha', 'agilizepulsar') . "</option>";
-    foreach ($campanhas as $campanha) {
-        $id = (int) $campanha['id'];
-        $deadline = Html::entities_deep($campanha['time_to_resolve'] ?? '');
-        $name = Html::entities_deep($campanha['name']);
-        echo "        <option value='{$id}' data-deadline='{$deadline}'>{$name}</option>";
-    }
-    echo "      </select>";
-    echo "      <div id='campaign-preview' class='campaign-preview' style='display:none;'></div>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field">
+                            <label class="pulsar-label required" for="area_impactada"><?php echo __('Área impactada', 'agilizepulsar'); ?></label>
+                            <select id="area_impactada" name="area_impactada" class="form-select" required>
+                                <option value=""><?php echo __('Selecione a área impactada', 'agilizepulsar'); ?></option>
+                                <?php foreach ($areas as $area): ?>
+                                    <option value="<?php echo Html::entities_deep($area); ?>"><?php echo Html::entities_deep($area); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='area_impactada'>" . __('Área impactada', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <select id='area_impactada' name='area_impactada' class='form-select' required>";
-    echo "        <option value=''>" . __('Selecione a área impactada', 'agilizepulsar') . "</option>";
-    foreach ($areas as $area) {
-        $value = Html::entities_deep($area);
-        echo "        <option value='{$value}'>{$value}</option>";
-    }
-    echo "      </select>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field pulsar-field--full">
+                            <label class="pulsar-label required" for="descricao"><?php echo __('Descrição da ideia', 'agilizepulsar'); ?></label>
+                            <textarea id="descricao" name="descricao" class="tinymce-editor" rows="10" required></textarea>
+                            <span class="pulsar-note"><?php echo __('Detalhe o problema, a proposta e o impacto esperado.', 'agilizepulsar'); ?></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='descricao'>" . __('Descrição da ideia', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <textarea id='descricao' name='descricao' class='tinymce-editor' rows='10' required></textarea>";
-    echo "    </td>";
-    echo "  </tr>";
-    echo "</table>";
+            <section class="pulsar-card">
+                <div class="pulsar-card__header">
+                    <h2><?php echo __('Planejamento da ideia', 'agilizepulsar'); ?></h2>
+                    <p class="pulsar-card__subtitle"><?php echo __('Explique benefícios, objetivos estratégicos e o nível de complexidade.', 'agilizepulsar'); ?></p>
+                </div>
+                <div class="pulsar-card__body">
+                    <div class="pulsar-grid">
+                        <div class="pulsar-field pulsar-field--full">
+                            <label class="pulsar-label required" for="beneficios"><?php echo __('Benefícios esperados', 'agilizepulsar'); ?></label>
+                            <textarea id="beneficios" name="beneficios" class="tinymce-editor" rows="10" required></textarea>
+                            <span class="pulsar-note"><?php echo __('Quais resultados a ideia gera para clientes, operação ou negócio?', 'agilizepulsar'); ?></span>
+                        </div>
 
-    echo "<table class='tab_cadre_fixe'>";
-    echo "  <tr class='tab_bg_2'>";
-    echo "    <th colspan='4'>" . __('Benefícios e Implementação', 'agilizepulsar') . "</th>";
-    echo "  </tr>";
+                        <div class="pulsar-field pulsar-field--full">
+                            <span class="pulsar-label required"><?php echo __('A ideia já existe?', 'agilizepulsar'); ?></span>
+                            <div class="pulsar-options">
+                                <label>
+                                    <input type="radio" name="ideia_existente" value="Sim" required>
+                                    <?php echo __('Sim', 'agilizepulsar'); ?>
+                                </label>
+                                <label>
+                                    <input type="radio" name="ideia_existente" value="Não" required>
+                                    <?php echo __('Não', 'agilizepulsar'); ?>
+                                </label>
+                            </div>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right' style='width: 220px;'>";
-    echo "      <label for='beneficios'>" . __('Benefícios esperados', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <textarea id='beneficios' name='beneficios' class='tinymce-editor' rows='10' required></textarea>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field">
+                            <label class="pulsar-label required" for="objetivo_estrategico"><?php echo __('Objetivo estratégico relacionado', 'agilizepulsar'); ?></label>
+                            <input type="text" id="objetivo_estrategico" name="objetivo_estrategico" class="form-control" maxlength="255" required>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='implementacao'>" . __('Equipe preparada para implementar?', 'agilizepulsar') . "</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <select id='implementacao' name='implementacao' class='form-select'>";
-    echo "        <option value=''>" . __('Selecione uma opção', 'agilizepulsar') . "</option>";
-    echo "        <option value='Sim'>" . __('Sim', 'agilizepulsar') . "</option>";
-    echo "        <option value='Não'>" . __('Não', 'agilizepulsar') . "</option>";
-    echo "        <option value='Talvez'>" . __('Talvez', 'agilizepulsar') . "</option>";
-    echo "      </select>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field">
+                            <span class="pulsar-label required"><?php echo __('Classificação da ideia', 'agilizepulsar'); ?></span>
+                            <div class="pulsar-options">
+                                <label>
+                                    <input type="radio" name="classificacao" value="Simples" required>
+                                    <?php echo __('Simples', 'agilizepulsar'); ?>
+                                </label>
+                                <label>
+                                    <input type="radio" name="classificacao" value="Complexa" required>
+                                    <?php echo __('Complexa', 'agilizepulsar'); ?>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>" . __('A ideia já existe?', 'agilizepulsar') . " *</td>";
-    echo "    <td colspan='3'>";
-    echo "      <label><input type='radio' name='ideia_existente' value='Sim' required> " . __('Sim', 'agilizepulsar') . "</label>&nbsp;&nbsp;";
-    echo "      <label><input type='radio' name='ideia_existente' value='Não' required> " . __('Não', 'agilizepulsar') . "</label>";
-    echo "    </td>";
-    echo "  </tr>";
+            <section class="pulsar-card">
+                <div class="pulsar-card__header">
+                    <h2><?php echo __('Anexos e autor', 'agilizepulsar'); ?></h2>
+                    <p class="pulsar-card__subtitle"><?php echo __('Inclua materiais de apoio e confirme quem está registrando a ideia.', 'agilizepulsar'); ?></p>
+                </div>
+                <div class="pulsar-card__body">
+                    <div class="pulsar-grid">
+                        <div class="pulsar-field pulsar-field--full">
+                            <div class="pulsar-attachment">
+                                <strong><?php echo __('Anexos opcionais', 'agilizepulsar'); ?></strong>
+                                <span><?php echo __('Arraste e solte ou selecione arquivos (até 100 MB cada).', 'agilizepulsar'); ?></span>
+                                <input type="file" id="anexos" name="anexos[]" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+                            </div>
+                            <span class="pulsar-note"><?php echo __('Aceitamos imagens, PDFs, documentos do Office e apresentações.', 'agilizepulsar'); ?></span>
+                        </div>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='objetivo_estrategico'>" . __('Objetivo estratégico relacionado', 'agilizepulsar') . " *</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <input type='text' id='objetivo_estrategico' name='objetivo_estrategico' class='form-control' maxlength='255' required>";
-    echo "    </td>";
-    echo "  </tr>";
+                        <div class="pulsar-field">
+                            <span class="pulsar-label"><?php echo __('Autor da ideia', 'agilizepulsar'); ?></span>
+                            <span class="pulsar-static-field"><?php echo Html::entities_deep($autorNome); ?></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>" . __('Classificação da ideia', 'agilizepulsar') . " *</td>";
-    echo "    <td colspan='3'>";
-    echo "      <label><input type='radio' name='classificacao' value='Simples' required> " . __('Simples', 'agilizepulsar') . "</label>&nbsp;&nbsp;";
-    echo "      <label><input type='radio' name='classificacao' value='Complexa' required> " . __('Complexa', 'agilizepulsar') . "</label>";
-    echo "    </td>";
-    echo "  </tr>";
-    echo "</table>";
-
-    echo "<table class='tab_cadre_fixe'>";
-    echo "  <tr class='tab_bg_2'>";
-    echo "    <th colspan='4'>" . __('Anexos e autor', 'agilizepulsar') . "</th>";
-    echo "  </tr>";
-
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right' style='width: 220px;'>";
-    echo "      <label for='anexos'>" . __('Anexos', 'agilizepulsar') . "</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <input type='file' id='anexos' name='anexos[]' multiple accept='.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'>";
-    echo "      <div class='section-help'>" . __('Formatos aceitos: imagens, PDF, Word, Excel e PowerPoint (até 100 MB cada).', 'agilizepulsar') . "</div>";
-    echo "    </td>";
-    echo "  </tr>";
-
-    echo "  <tr class='tab_bg_1'>";
-    echo "    <td class='right'>";
-    echo "      <label for='autor_id'>" . __('Autor da ideia', 'agilizepulsar') . "</label>";
-    echo "    </td>";
-    echo "    <td colspan='3'>";
-    echo "      <select id='autor_id' name='autor_id' class='form-select'>";
-    echo "        <option value='0'>" . __('Usar meu usuário', 'agilizepulsar') . "</option>";
-    foreach ($colaboradores as $colaborador) {
-        $id = (int) $colaborador['id'];
-        $label = trim(($colaborador['realname'] ?? '') . ' ' . ($colaborador['firstname'] ?? ''));
-        if ($label === '') {
-            $label = $colaborador['name'];
-        }
-        $label = Html::entities_deep($label);
-        echo "        <option value='{$id}'>{$label}</option>";
-    }
-    echo "      </select>";
-    echo "    </td>";
-    echo "  </tr>";
-    echo "</table>";
-
-    echo "<div class='form-footer'>";
-    echo "  <button type='submit' class='btn btn-primary btn-u'>" . __('Enviar ideia', 'agilizepulsar') . "</button>";
-    echo "  <a class='btn btn-secondary btn-u' href='{$pluginWeb}/front/feed.php'>" . __('Cancelar', 'agilizepulsar') . "</a>";
-    echo "</div>";
-
-    echo "</form>";
-    echo "</div>";
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-u"><?php echo __('Enviar ideia', 'agilizepulsar'); ?></button>
+                <a class="btn btn-secondary btn-u" href="<?php echo $pluginWeb; ?>/front/feed.php"><?php echo __('Cancelar', 'agilizepulsar'); ?></a>
+            </div>
+        </form>
+    </div>
+    <?php
+    echo ob_get_clean();
 }

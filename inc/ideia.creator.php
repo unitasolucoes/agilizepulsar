@@ -30,7 +30,7 @@ class PluginAgilizepulsarIdeiaCreator {
                 throw new RuntimeException(__('Não foi possível criar o ticket da ideia.', 'agilizepulsar'));
             }
 
-            self::addRequesterToTicket($ticketId, $dados);
+            self::addRequesterToTicket($ticketId);
             $attachments = self::processAttachments($ticketId, $files);
 
             if (!empty($dados['campanha_id'])) {
@@ -101,9 +101,6 @@ class PluginAgilizepulsarIdeiaCreator {
         $campanhaInfo = self::getCampanhaInfo((int) ($dados['campanha_id'] ?? 0));
         $content = self::generateTicketContent($dados, $campanhaInfo);
 
-        $autorId = (int) ($dados['autor_id'] ?? 0);
-        $recipientId = $autorId > 0 ? $autorId : Session::getLoginUserID();
-
         $ticketType = defined('Ticket::DEMAND_TYPE') ? Ticket::DEMAND_TYPE : 2;
 
         return [
@@ -115,31 +112,20 @@ class PluginAgilizepulsarIdeiaCreator {
             'urgency'            => 3,
             'impact'             => 3,
             'entities_id'        => $_SESSION['glpiactive_entity'],
-            'users_id_recipient' => $recipientId,
+            'users_id_recipient' => Session::getLoginUserID(),
             'itilcategories_id'  => $ideaCategory,
             'date'               => $currentTime,
             'date_mod'           => $currentTime
         ];
     }
 
-    private static function addRequesterToTicket(int $ticketId, array $dados): void {
-        $autorId = (int) ($dados['autor_id'] ?? 0);
-        $userId = $autorId > 0 ? $autorId : Session::getLoginUserID();
-
+    private static function addRequesterToTicket(int $ticketId): void {
         $ticketUser = new Ticket_User();
         $ticketUser->add([
             'tickets_id' => $ticketId,
-            'users_id'   => $userId,
+            'users_id'   => Session::getLoginUserID(),
             'type'       => CommonITILActor::REQUESTER
         ]);
-
-        if ($autorId > 0 && $autorId !== Session::getLoginUserID()) {
-            $ticketUser->add([
-                'tickets_id' => $ticketId,
-                'users_id'   => Session::getLoginUserID(),
-                'type'       => CommonITILActor::OBSERVER
-            ]);
-        }
     }
 
     private static function processAttachments(int $ticketId, array $files): int {

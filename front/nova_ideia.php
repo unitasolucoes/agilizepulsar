@@ -52,23 +52,21 @@ $areasPadrao = [
     'Jurídico'
 ];
 
-$colaboradores = [];
-try {
-    $iterator = $DB->request([
-        'SELECT' => ['id', 'name', 'realname', 'firstname'],
-        'FROM'   => 'glpi_users',
-        'WHERE'  => [
-            'is_active'  => 1,
-            'is_deleted' => 0
-        ],
-        'ORDER'  => 'realname ASC'
-    ]);
+$autorNome = __('Usuário', 'agilizepulsar');
+$user = new User();
+if ($user->getFromDB(Session::getLoginUserID())) {
+    $first = trim($user->fields['firstname'] ?? '');
+    $last = trim($user->fields['realname'] ?? '');
+    $login = trim($user->fields['name'] ?? '');
 
-    foreach ($iterator as $row) {
-        $colaboradores[] = $row;
+    $full = trim($first . ' ' . $last);
+    if ($full !== '') {
+        $autorNome = $full;
+    } elseif ($last !== '') {
+        $autorNome = $last;
+    } elseif ($login !== '') {
+        $autorNome = $login;
     }
-} catch (Throwable $exception) {
-    error_log('Plugin Agilizepulsar - Erro ao buscar colaboradores: ' . $exception->getMessage());
 }
 
 $title = sprintf(__('%s – Nova Ideia', 'agilizepulsar'), $menuName);
@@ -86,7 +84,7 @@ $pluginWeb = Plugin::getWebDir('agilizepulsar');
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
 
 <?php
-plugin_agilizepulsar_render_ideia_form($campanhas, $areasPadrao, $colaboradores, $csrf);
+plugin_agilizepulsar_render_ideia_form($campanhas, $areasPadrao, $csrf, $autorNome);
 ?>
 
 <script src="<?php echo $pluginWeb; ?>/js/ideia.form.js"></script>
