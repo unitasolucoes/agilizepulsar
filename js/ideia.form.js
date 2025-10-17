@@ -74,34 +74,6 @@
     updatePreview();
   };
 
-  const setupFileInput = (form) => {
-    const fileInput = form.querySelector('input[type="file"][name="anexos[]"]');
-    const trigger = form.querySelector('[data-action="select-files"]');
-    const list = form.querySelector('#selected-files');
-
-    if (!fileInput || !trigger || !list) {
-      return;
-    }
-
-    trigger.addEventListener('click', (event) => {
-      event.preventDefault();
-      fileInput.click();
-    });
-
-    fileInput.addEventListener('change', () => {
-      list.innerHTML = '';
-      if (!fileInput.files || fileInput.files.length === 0) {
-        return;
-      }
-
-      Array.from(fileInput.files).forEach((file) => {
-        const item = document.createElement('li');
-        item.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-        list.appendChild(item);
-      });
-    });
-  };
-
   const toggleSubmitState = (button, isLoading) => {
     if (!button) {
       return;
@@ -244,7 +216,6 @@
 
     initTinyMCE();
     setupCampaignPreview(form);
-    setupFileInput(form);
     handleSubmit(form);
   });
 })();
